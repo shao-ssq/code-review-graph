@@ -1,50 +1,45 @@
-# Julia Parser Reconciliation Implementation Plan
+# Julia 解析器协调实现计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **面向 Agent 工作者：** 必需子技能：使用 superpowers:subagent-driven-development（推荐）或 superpowers:executing-plans 逐任务实现本计划。步骤使用复选框（`- [ ]`）语法进行追踪。
 
-**Goal:** Port the safe Julia parser behavior from PR #560 while giving nested and module-qualified definitions collision-free identities and resolvable downstream graph edges.
+**目标：** 从 PR #560 移植安全的 Julia 解析器行为，同时为嵌套和模块限定的定义提供无冲突的标识和可解析的下游图谱边。
 
-**Architecture:** Keep the existing parser and graph schema. Julia-only AST helpers derive field components, operator names, aliases, and complete lexical scopes; parser nodes encode lexical scope plus explicit qualifier in `parent_name`, while post-parse call resolution searches from the caller's nearest scope outward.
+**架构：** 保持现有解析器和图谱 schema 不变。Julia 专用 AST 辅助函数推导字段组件、操作符名称、别名和完整词法作用域；解析器节点在 `parent_name` 中编码词法作用域加显式限定符，而后解析调用解析从调用方最近的作用域向外搜索。
 
-**Tech Stack:** Python 3.10+, Tree-sitter via `tree-sitter-language-pack`, pytest, SQLite `GraphStore`, Ruff, mypy, Bandit.
+**技术栈：** Python 3.10+、通过 `tree-sitter-language-pack` 的 Tree-sitter、pytest、SQLite `GraphStore`、Ruff、mypy、Bandit。
 
-## Global Constraints
+## 全局约束
 
-- Do not change the graph schema or generic behavior for other languages.
-- Do not infer definitions from Tree-sitter `ERROR` nodes.
-- Do not turn scalar Julia `const` bindings into Type nodes.
-- Keep source PR #560 unchanged and credit `dan <danvinci@fastmail.net>` in the implementation commit.
-- Every production change must follow a witnessed red-green-refactor cycle.
-- Preserve all existing Julia macros, enums, testsets, exports, includes, and fixture tests.
+- 不改变其他语言的图谱 schema 或通用行为。
+- 不从 Tree-sitter `ERROR` 节点推断定义。
+- 不将 Julia 标量 `const` 绑定转换为 Type 节点。
+- 保持源 PR #560 不变，并在实现提交中注明 `dan <danvinci@fastmail.net>` 的贡献。
+- 每个生产变更必须遵循可见的红/绿/重构循环。
+- 保留所有现有的 Julia 宏、枚举、testset、导出、include 和 fixture 测试。
 
 ---
 
-## File structure
+## 文件结构
 
-- Create `tests/test_julia_reconciliation.py`: focused parser, scope, fail-soft,
-  persistence, and downstream query regressions independent of the shared
-  multi-language fixture.
-- Modify `code_review_graph/parser.py`: Julia-only helpers and extraction,
-  scope, import-alias, call-target, and same-file resolution behavior.
-- Keep `tests/fixtures/sample.jl` and `tests/test_multilang.py` unchanged so
-  they remain an independent no-regression check of existing Julia behavior.
+- 创建 `tests/test_julia_reconciliation.py`：专注的解析器、作用域、软失败、持久化和下游查询回归测试，独立于共享的多语言 fixture。
+- 修改 `code_review_graph/parser.py`：Julia 专用辅助函数和提取、作用域、导入别名、调用目标和同文件解析行为。
+- 保持 `tests/fixtures/sample.jl` 和 `tests/test_multilang.py` 不变，以使其保持作为现有 Julia 行为的独立无回归检查。
 
-### Task 1: Julia leaf constructs and fail-soft extraction
+### 任务 1：Julia 叶节点构造和软失败提取
 
-**Files:**
-- Create: `tests/test_julia_reconciliation.py`
-- Modify: `code_review_graph/parser.py:3361-3695,7431-7475,7909-7950`
+**文件：**
 
-**Interfaces:**
-- Consumes: `CodeParser.parse_bytes(Path, bytes) -> tuple[list[NodeInfo], list[EdgeInfo]]`.
-- Produces: `_julia_component_name(node) -> Optional[str]`,
-  `_julia_field_parts(node) -> list[str]`,
-  `_julia_field_info(node) -> tuple[Optional[str], Optional[str]]`, and valid
-  Function/Type/import outputs for the source constructs.
+- 创建：`tests/test_julia_reconciliation.py`
+- 修改：`code_review_graph/parser.py:3361-3695,7431-7475,7909-7950`
 
-- [ ] **Step 1: Write focused failing tests**
+**接口：**
 
-Create a helper that writes no production files and parses snippets directly:
+- 消费：`CodeParser.parse_bytes(Path, bytes) -> tuple[list[NodeInfo], list[EdgeInfo]]`。
+- 产出：`_julia_component_name(node) -> Optional[str]`、`_julia_field_parts(node) -> list[str]`、`_julia_field_info(node) -> tuple[Optional[str], Optional[str]]`，以及对源构造有效的 Function/Type/import 输出。
+
+- [ ] **步骤 1：编写专注的失败测试**
+
+创建一个不写生产文件、直接解析片段的辅助函数：
 
 ```python
 from pathlib import Path
@@ -95,9 +90,9 @@ def test_malformed_qualified_stub_fails_soft():
     assert edges == []
 ```
 
-- [ ] **Step 2: Verify RED**
+- [ ] **步骤 2：验证红色（RED）**
 
-Run:
+运行：
 
 ```bash
 uv run --frozen --no-sync pytest -q \
@@ -108,15 +103,11 @@ uv run --frozen --no-sync pytest -q \
   tests/test_julia_reconciliation.py::test_malformed_qualified_stub_fails_soft
 ```
 
-Expected: stub, operator, type-alias, and import-alias assertions fail for
-missing behavior; malformed input already passes and guards the implementation.
+预期：stub、操作符、类型别名和导入别名断言因缺少行为而失败；畸形输入已通过并保护实现。
 
-- [ ] **Step 3: Implement minimal Julia leaf handling**
+- [ ] **步骤 3：实现最小 Julia 叶节点处理**
 
-Add helpers that return `None` for unknown shapes, use them from
-`_julia_short_func_name` and Julia `_get_name`, add a `const_statement` branch
-to `_extract_julia_constructs`, and extend `_extract_import` for direct and
-selected `import_alias` nodes. The concrete scope-free helper contract is:
+添加对未知形状返回 `None` 的辅助函数，在 `_julia_short_func_name` 和 Julia `_get_name` 中使用它们，将 `const_statement` 分支添加到 `_extract_julia_constructs`，并扩展 `_extract_import` 以支持直接和选择的 `import_alias` 节点。具体的无作用域辅助函数约定如下：
 
 ```python
 @staticmethod
@@ -135,37 +126,34 @@ def _julia_component_name(node) -> Optional[str]:
     return None
 ```
 
-For a parameterized const, append `NodeInfo(kind="Type", ...)` and a matching
-`CONTAINS` edge, then return `True`. Do not consume any other const statement.
+对于参数化 const，追加 `NodeInfo(kind="Type", ...)` 和匹配的 `CONTAINS` 边，然后返回 `True`。不消费其他任何 const 语句。
 
-- [ ] **Step 4: Verify GREEN and no Julia regressions**
+- [ ] **步骤 4：验证绿色（GREEN）且无 Julia 回归**
 
-Run:
+运行：
 
 ```bash
 uv run --frozen --no-sync pytest -q \
   tests/test_julia_reconciliation.py tests/test_multilang.py::TestJuliaParsing
 ```
 
-Expected: all selected tests pass.
+预期：所有选定测试通过。
 
-### Task 2: Canonical qualified identities and scoped call resolution
+### 任务 2：规范化限定标识和作用域调用解析
 
-**Files:**
-- Modify: `tests/test_julia_reconciliation.py`
-- Modify: `code_review_graph/parser.py:2423-2460,3361-3695,4889-5225,5257-5360`
+**文件：**
 
-**Interfaces:**
-- Consumes: Julia field helpers from Task 1.
-- Produces: `_julia_scope_join(left, right) -> Optional[str]`,
-  `_julia_definition_qualifier(node) -> Optional[str]`, canonical parent names,
-  dotted call targets, and nearest-scope resolution in `_resolve_call_targets`.
+- 修改：`tests/test_julia_reconciliation.py`
+- 修改：`code_review_graph/parser.py:2423-2460,3361-3695,4889-5225,5257-5360`
 
-- [ ] **Step 1: Write collision and call failures**
+**接口：**
 
-Add tests using a module that defines local `show`, `Base.show`,
-`Base.length`, `Base.:+`, `A.B.run`, a one-line delegate, and dotted calls.
-Assert these exact identities and edges:
+- 消费：任务 1 中的 Julia 字段辅助函数。
+- 产出：`_julia_scope_join(left, right) -> Optional[str]`、`_julia_definition_qualifier(node) -> Optional[str]`、规范化父名称、带点调用目标，以及 `_resolve_call_targets` 中的最近作用域解析。
+
+- [ ] **步骤 1：编写冲突和调用失败测试**
+
+添加使用如下模块的测试：定义本地 `show`、`Base.show`、`Base.length`、`Base.:+`、`A.B.run`、单行委托和带点调用。断言这些精确的标识和边：
 
 ```python
 assert ("show", "Demo") in identities
@@ -182,61 +170,46 @@ assert any(
 )
 ```
 
-Also assert the qualifier reference from `Demo.Base.show` targets literal
-`Base`, even when the file contains a local function named `Base`.
+同时断言来自 `Demo.Base.show` 的限定符引用指向字面量 `Base`，即使文件中包含名为 `Base` 的本地函数。
 
-- [ ] **Step 2: Verify RED**
+- [ ] **步骤 2：验证红色（RED）**
 
-Run the new collision/call tests individually with `pytest -vv`. Expected:
-qualified identities collapse under `Demo`, `Base.:+` becomes a bogus `Base`
-function, one-line calls are missing, and dotted targets remain bare leaves.
+单独用 `pytest -vv` 运行新的冲突/调用测试。预期：限定标识折叠到 `Demo` 下，`Base.:+` 变成错误的 `Base` 函数，单行调用缺失，带点目标保留为裸叶子。
 
-- [ ] **Step 3: Implement canonical scope and qualified calls**
+- [ ] **步骤 3：实现规范化作用域和限定调用**
 
-Use this identity rule in long and short definitions:
+在长形和短形定义中使用此标识规则：
 
 ```python
 lexical_parent = self._julia_scope_join(enclosing_class, enclosing_func)
 identity_parent = self._julia_scope_join(lexical_parent, qualifier)
 ```
 
-When `qualifier` is absent, `identity_parent` is `lexical_parent`. Store the
-explicit qualifier in `extra["julia_module_qualifier"]`; create `CONTAINS` from
-`lexical_parent`; recurse into the function with
-`enclosing_class=identity_parent` and `enclosing_func=name`.
+当 `qualifier` 缺失时，`identity_parent` 就是 `lexical_parent`。将显式限定符存储在 `extra["julia_module_qualifier"]` 中；从 `lexical_parent` 创建 `CONTAINS`；用 `enclosing_class=identity_parent` 和 `enclosing_func=name` 递归进入函数。
 
-In `_extract_calls`, replace a Julia field-expression callee with its complete
-`qualifier.leaf` text and set `julia_call_module`. Dispatch a short-form RHS
-call node directly before descending into its children.
+在 `_extract_calls` 中，将 Julia 字段表达式被调用方替换为其完整的 `qualifier.leaf` 文本，并设置 `julia_call_module`。在下降到其子节点之前直接分发短形 RHS 调用节点。
 
-In `_resolve_call_targets`, retain the current implementation for non-Julia
-files. For Julia, index every definition by the tail of its canonical
-qualified name and test candidates in this order for source
-`file::Outer.Inner.caller` and target `f`: `Outer.Inner.caller.f`,
-`Outer.Inner.f`, `Outer.f`, `f`. Skip local rewriting for REFERENCES edges
-whose extra contains `julia_qualified_def`.
+在 `_resolve_call_targets` 中，对非 Julia 文件保留当前实现。对于 Julia，按规范化限定名称的尾部索引每个定义，并按此顺序测试候选（源 `file::Outer.Inner.caller`，目标 `f`）：`Outer.Inner.caller.f`、`Outer.Inner.f`、`Outer.f`、`f`。对 extra 中包含 `julia_qualified_def` 的 REFERENCES 边跳过本地重写。
 
-- [ ] **Step 4: Verify GREEN**
+- [ ] **步骤 4：验证绿色（GREEN）**
 
-Run the new tests plus `tests/test_multilang.py::TestJuliaParsing`; expected:
-all pass and no existing Julia assertion changes.
+运行新测试加 `tests/test_multilang.py::TestJuliaParsing`；预期：全部通过，无现有 Julia 断言变更。
 
-### Task 3: Nested scopes, aliases, macros, and testsets
+### 任务 3：嵌套作用域、别名、宏和 testset
 
-**Files:**
-- Modify: `tests/test_julia_reconciliation.py`
-- Modify: `code_review_graph/parser.py:3630-3695,4889-5020,6707-6760`
+**文件：**
 
-**Interfaces:**
-- Consumes: canonical scope and resolver from Task 2.
-- Produces: full lexical paths for nested modules/functions/testsets and Julia
-  alias bindings in `import_map`.
+- 修改：`tests/test_julia_reconciliation.py`
+- 修改：`code_review_graph/parser.py:3630-3695,4889-5020,6707-6760`
 
-- [ ] **Step 1: Write nested and alias failures**
+**接口：**
 
-Add a nested `Outer.Inner` snippet with shadowed `f`, a nested function, a
-function-local `@testset`, `@inline`/ordinary macro calls, and
-`import DataFrames as DF`. Assert:
+- 消费：任务 2 中的规范化作用域和解析器。
+- 产出：嵌套模块/函数/testset 的完整词法路径，以及 `import_map` 中的 Julia 别名绑定。
+
+- [ ] **步骤 1：编写嵌套和别名失败测试**
+
+添加包含 shadowed `f` 的嵌套 `Outer.Inner` 片段、嵌套函数、函数本地 `@testset`、`@inline`/普通宏调用，以及 `import DataFrames as DF`。断言：
 
 ```python
 assert "Outer.Inner" in class_parents_and_names
@@ -248,47 +221,41 @@ assert any(e.target == "DataFrames.transform" for e in alias_calls)
 assert any(e.target == "@inline" for e in calls)
 ```
 
-- [ ] **Step 2: Verify RED**
+- [ ] **步骤 2：验证红色（RED）**
 
-Run only these tests. Expected: nested functions/modules use truncated parent
-names, the nearest call picks `Outer.f`, the testset identity differs from its
-edge source, and the alias call remains `DF.transform`.
+仅运行这些测试。预期：嵌套函数/模块使用截断的父名称，最近调用选取 `Outer.f`，testset 标识与其边来源不同，别名调用保留为 `DF.transform`。
 
-- [ ] **Step 3: Implement nested scope and alias normalization**
+- [ ] **步骤 3：实现嵌套作用域和别名规范化**
 
-For Julia class/module extraction, recurse with the joined scope and emit
-`CONTAINS` from the enclosing scope rather than always from the File. For
-testsets, use joined lexical function scope as `parent_name`, containment
-source, and recursion scope.
+对于 Julia 类/模块提取，用连接的作用域递归，并从封闭作用域（而非总是从 File）发出 `CONTAINS`。对于 testset，使用连接的词法函数作用域作为 `parent_name`、containment 来源和递归作用域。
 
-Extend `_collect_import_names` for Julia aliases so:
+扩展 `_collect_import_names` 以支持 Julia 别名，使得：
 
 ```python
 import_map["DF"] = "DataFrames"
 import_map["Columns"] = "Tables.AbstractColumns"
 ```
 
-When a qualified call's first module segment is an alias, replace it before
-forming the final dotted target. Leave direct modules unchanged.
+当限定调用的第一个模块段是别名时，在形成最终带点目标之前替换它。保持直接模块不变。
 
-- [ ] **Step 4: Verify GREEN and refactor**
+- [ ] **步骤 4：验证绿色（GREEN）并重构**
 
-Run the focused file and existing Julia class. Remove duplicate AST walks only
-after all tests pass, then rerun the same command.
+运行专注文件和现有 Julia 类。仅在所有测试通过后移除重复的 AST 遍历，然后重新运行同一命令。
 
-### Task 4: GraphStore and downstream query persistence
+### 任务 4：GraphStore 和下游查询持久化
 
-**Files:**
-- Modify: `tests/test_julia_reconciliation.py`
+**文件：**
 
-**Interfaces:**
-- Consumes: `full_build(Path, GraphStore) -> dict` and canonical parser output.
-- Produces: an integration regression proving the SQLite node and edge API sees
-  the same identities as the parser.
+- 修改：`tests/test_julia_reconciliation.py`
 
-- [ ] **Step 1: Write the full-build test**
+**接口：**
 
-Create `.git` and a Julia source under `tmp_path`, run `full_build`, then assert:
+- 消费：`full_build(Path, GraphStore) -> dict` 和规范化解析器输出。
+- 产出：证明 SQLite 节点和边 API 看到与解析器相同标识的集成回归测试。
+
+- [ ] **步骤 1：编写完整构建测试**
+
+在 `tmp_path` 下创建 `.git` 和 Julia 源文件，运行 `full_build`，然后断言：
 
 ```python
 local = store.get_node(f"{source_path}::Demo.show")
@@ -301,19 +268,15 @@ assert any(edge.kind == "CALLS" and edge.source.endswith("::Demo.invoke")
 assert result["errors"] == []
 ```
 
-Also query the persisted nested target and Type alias, and close the store in a
-`finally` block.
+同时查询持久化的嵌套目标和 Type 别名，并在 `finally` 块中关闭 store。
 
-- [ ] **Step 2: Verify RED or prove prior task coverage**
+- [ ] **步骤 2：验证红色（RED）或证明前置任务已覆盖**
 
-Run this test before any integration-specific production change. It must fail
-against pre-port production code; if Tasks 1-3 already make it pass, temporarily
-revert the parser changes, confirm the expected identity/call failure, restore
-them, and rerun green.
+在任何集成专用生产变更之前运行此测试。它必须在预移植生产代码上失败；如果任务 1-3 已使其通过，临时回退解析器变更，确认预期的标识/调用失败，恢复它们，然后重新运行绿色。
 
-- [ ] **Step 3: Verify focused and full suites**
+- [ ] **步骤 3：验证专注和完整测试套件**
 
-Run:
+运行：
 
 ```bash
 uv run --frozen --no-sync pytest -q tests/test_julia_reconciliation.py \
@@ -321,21 +284,21 @@ uv run --frozen --no-sync pytest -q tests/test_julia_reconciliation.py \
 uv run --frozen --no-sync pytest -q
 ```
 
-Expected baseline delta: all 1,573 prior passes remain green plus the new Julia
-tests; existing skips/xpasses remain non-failures.
+预期基线增量：所有 1,573 个先前通过的测试保持绿色，加上新的 Julia 测试；现有的 skip/xpass 保持非失败状态。
 
-### Task 5: Static checks, graph review, attribution, rebase, and publication
+### 任务 5：静态检查、图谱审查、归因、变基和发布
 
-**Files:**
-- Verify: `code_review_graph/parser.py`
-- Verify: `tests/test_julia_reconciliation.py`
-- Verify: design and plan documents
+**文件：**
 
-**Interfaces:**
-- Produces: a ready replacement PR based on the latest `origin/main`, with Dan
-  credited and source PR #560 unchanged.
+- 验证：`code_review_graph/parser.py`
+- 验证：`tests/test_julia_reconciliation.py`
+- 验证：设计和计划文档
 
-- [ ] **Step 1: Run local quality gates**
+**接口：**
+
+- 产出：基于最新 `origin/main` 的就绪替代 PR，Dan 的贡献已注明，源 PR #560 未被修改。
+
+- [ ] **步骤 1：运行本地质量门禁**
 
 ```bash
 uv run --frozen --no-sync ruff check code_review_graph tests
@@ -346,33 +309,24 @@ uv run --frozen --no-sync python scripts/check_schema_sync.py
 git diff --check
 ```
 
-Expected: every command exits 0.
+预期：每个命令都以 0 退出。
 
-- [ ] **Step 2: Review the graph and diff**
+- [ ] **步骤 2：审查图谱和差异**
 
-Incrementally rebuild the knowledge graph, then run change detection, affected
-flows, tests-for queries, and focused review context against `origin/main`.
-Inspect `git diff --stat`, `git diff`, and ensure only the approved files and
-behavior changed.
+增量重建知识图谱，然后针对 `origin/main` 运行变更检测、受影响流程、tests-for 查询和专注审查上下文。检查 `git diff --stat`、`git diff`，确保只有已批准的文件和行为发生了变更。
 
-- [ ] **Step 3: Commit with attribution**
+- [ ] **步骤 3：带归因提交**
 
-Commit production/tests with this trailer:
+使用此 trailer 提交生产代码/测试：
 
 ```text
 Co-authored-by: dan <danvinci@fastmail.net>
 ```
 
-- [ ] **Step 4: Rebase and repeat fresh verification**
+- [ ] **步骤 4：变基并重复全新验证**
 
-Fetch `origin/main`, rebase the branch, rerun focused/full tests and every
-static check, update the graph, and inspect the final diff. Resolve no unrelated
-changes and never force-push without explicit approval.
+获取 `origin/main`，变基分支，重新运行专注/完整测试和所有静态检查，更新图谱，并检查最终差异。不解决任何无关变更，未经明确批准绝不强制推送。
 
-- [ ] **Step 5: Push and open a ready replacement PR**
+- [ ] **步骤 5：推送并开启就绪替代 PR**
 
-The PR body must name source PR #560 and its exact head, enumerate overlap and
-ported behavior, explain the extra-only collision/call-resolution blocker,
-state the exact base/head and local test evidence, credit Dan, and say source
-PR #560 was not modified. Wait for every required check, including Windows, to
-finish successfully before reporting readiness.
+PR 正文必须：命名源 PR #560 及其精确 HEAD、枚举重叠和移植的行为、解释额外冲突/调用解析阻塞因素、说明精确的 base/head 和本地测试证据、注明 Dan 的贡献，并声明源 PR #560 未被修改。等待所有必需检查（包括 Windows）成功完成后，再报告就绪状态。

@@ -1,179 +1,179 @@
-# Knowledge Graph Schema
+# 知识图谱 Schema
 
-## Node Types
+## 节点类型
 
-### File
-Represents a source code file.
+### File（文件）
+表示一个源代码文件。
 
-| Property | Type | Description |
-|----------|------|-------------|
-| name | string | Absolute file path |
-| file_path | string | Same as name for File nodes |
-| language | string | Detected language (python, typescript, go, etc.) |
-| line_start | int | Always 1 |
-| line_end | int | Total line count |
-| file_hash | string | SHA-256 of file contents (for change detection) |
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| name | string | 绝对文件路径 |
+| file_path | string | 与 File 节点的 name 相同 |
+| language | string | 检测到的语言（python、typescript、go 等） |
+| line_start | int | 始终为 1 |
+| line_end | int | 总行数 |
+| file_hash | string | 文件内容的 SHA-256（用于变更检测） |
 
-### Class
-Represents a class, struct, interface, enum, or module definition.
+### Class（类）
+表示类、结构体、接口、枚举或模块定义。
 
-| Property | Type | Description |
-|----------|------|-------------|
-| name | string | Class name |
-| file_path | string | File containing the class |
-| line_start | int | Definition start line |
-| line_end | int | Definition end line |
-| language | string | Source language |
-| parent_name | string? | Enclosing class (for nested classes) |
-| modifiers | string? | Access modifiers (public, abstract, etc.) |
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| name | string | 类名 |
+| file_path | string | 包含该类的文件 |
+| line_start | int | 定义起始行 |
+| line_end | int | 定义结束行 |
+| language | string | 源语言 |
+| parent_name | string? | 外层类（用于嵌套类） |
+| modifiers | string? | 访问修饰符（public、abstract 等） |
 
-### Function
-Represents a function, method, or constructor definition.
+### Function（函数）
+表示函数、方法或构造函数定义。
 
-| Property | Type | Description |
-|----------|------|-------------|
-| name | string | Function name |
-| file_path | string | File containing the function |
-| line_start | int | Definition start line |
-| line_end | int | Definition end line |
-| language | string | Source language |
-| parent_name | string? | Enclosing class (for methods) |
-| params | string? | Parameter list as source text |
-| return_type | string? | Return type annotation |
-| is_test | bool | Whether this is a test function |
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| name | string | 函数名 |
+| file_path | string | 包含该函数的文件 |
+| line_start | int | 定义起始行 |
+| line_end | int | 定义结束行 |
+| language | string | 源语言 |
+| parent_name | string? | 外层类（用于方法） |
+| params | string? | 参数列表的源代码文本 |
+| return_type | string? | 返回类型注解 |
+| is_test | bool | 是否为测试函数 |
 
-### Test
-Same schema as Function, but `kind = "Test"` and `is_test = true`. Identified by:
-- Name starts with `test_` or `Test`
-- Name ends with `_test` or `_spec`
-- File matches test file patterns (`test_*.py`, `*.test.ts`, `*_test.go`, etc.)
-- Language-specific test markers where supported, such as common Rust test attributes
+### Test（测试）
+与 Function 的 Schema 相同，但 `kind = "Test"` 且 `is_test = true`。识别依据：
+- 名称以 `test_` 或 `Test` 开头
+- 名称以 `_test` 或 `_spec` 结尾
+- 文件符合测试文件模式（`test_*.py`、`*.test.ts`、`*_test.go` 等）
+- 支持时的语言特定测试标记，例如常见的 Rust 测试属性
 
-### Type
-Represents a type alias, interface, enum, struct-like type, or parser-specific type construct where the language exposes one.
+### Type（类型）
+表示类型别名、接口、枚举、类结构体类型，或语言暴露的解析器特定类型结构。
 
-| Property | Type | Description |
-|----------|------|-------------|
-| name | string | Type name |
-| file_path | string | File containing the type |
-| line_start | int | Definition start line |
-| line_end | int | Definition end line |
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| name | string | 类型名 |
+| file_path | string | 包含该类型的文件 |
+| line_start | int | 定义起始行 |
+| line_end | int | 定义结束行 |
 
-### Endpoint
-A synthesised node representing a routed entry point, emitted by the Spring enrichment for request mappings. Linked to the method that services it by a `HANDLES` edge.
+### Endpoint（端点）
+表示一个路由入口点的合成节点，由 Spring 增强功能为请求映射生成。通过 `HANDLES` 边与处理它的方法相连。
 
-### Scheduler
-A synthesised node representing a scheduled invocation, emitted for `@Scheduled` methods. Linked to the method it fires by a `TRIGGERS` edge.
+### Scheduler（调度器）
+表示调度调用的合成节点，为 `@Scheduled` 方法生成。通过 `TRIGGERS` 边与其触发的方法相连。
 
-### ConfigProperty
-An externalised configuration key parsed out of Spring `application.properties` / `application.yml` files. Values are deliberately discarded — only the key is stored. Linked to the code that binds it by a `DEPENDS_ON_CONFIG` edge.
+### ConfigProperty（配置属性）
+从 Spring `application.properties` / `application.yml` 文件中解析出的外部化配置键。值被有意丢弃——只存储键。通过 `DEPENDS_ON_CONFIG` 边与绑定它的代码相连。
 
-## Edge Types
+## 边类型
 
 ### CALLS
-A function calls another function.
+一个函数调用另一个函数。
 
-| Property | Type | Description |
-|----------|------|-------------|
-| source | string | Qualified name of the caller |
-| target | string | Name of the called function (may be unqualified) |
-| file_path | string | File where the call occurs |
-| line | int | Line number of the call |
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| source | string | 调用方的限定名称 |
+| target | string | 被调用函数的名称（可能是非限定名） |
+| file_path | string | 调用发生的文件 |
+| line | int | 调用的行号 |
 
 ### IMPORTS_FROM
-A file imports from another module or file.
+一个文件从另一个模块或文件导入。
 
-| Property | Type | Description |
-|----------|------|-------------|
-| source | string | Importing file path |
-| target | string | Imported module/path |
-| file_path | string | Same as source |
-| line | int | Line number of the import |
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| source | string | 导入方的文件路径 |
+| target | string | 被导入的模块/路径 |
+| file_path | string | 与 source 相同 |
+| line | int | 导入语句的行号 |
 
 ### INHERITS
-A class extends/inherits from another class.
+一个类继承自另一个类。
 
-| Property | Type | Description |
-|----------|------|-------------|
-| source | string | Child class qualified name |
-| target | string | Parent class name |
-| file_path | string | File containing the child class |
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| source | string | 子类限定名称 |
+| target | string | 父类名称 |
+| file_path | string | 包含子类的文件 |
 
 ### IMPLEMENTS
-A class implements an interface (Java, C#, TypeScript, Go).
+一个类实现一个接口（Java、C#、TypeScript、Go）。
 
-| Property | Type | Description |
-|----------|------|-------------|
-| source | string | Implementing class |
-| target | string | Interface name |
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| source | string | 实现类 |
+| target | string | 接口名称 |
 
 ### CONTAINS
-Structural containment: a file contains a class, a class contains a method.
+结构性包含关系：文件包含类，类包含方法。
 
-| Property | Type | Description |
-|----------|------|-------------|
-| source | string | Container (file path or class qualified name) |
-| target | string | Contained node qualified name |
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| source | string | 容器（文件路径或类限定名称） |
+| target | string | 被包含节点的限定名称 |
 
 ### TESTED_BY
-A function is tested by a test function.
+一个函数被一个测试函数所测试。
 
-| Property | Type | Description |
-|----------|------|-------------|
-| source | string | Function being tested |
-| target | string | Test function qualified name |
+| 属性 | 类型 | 说明 |
+|------|------|------|
+| source | string | 被测试的函数 |
+| target | string | 测试函数的限定名称 |
 
 ### DEPENDS_ON
-General dependency relationship (used for non-specific dependencies).
+通用依赖关系（用于非特定依赖）。
 
 ### REFERENCES
-A value-level reference to another symbol, often used for function-as-value patterns such as callback maps, arrays, or assignment.
+对另一个符号的值级引用，通常用于函数作为值的模式，如回调映射、数组或赋值。
 
 ### INJECTS
-A dependency-injection relationship, currently used by Java/Spring enrichment for injected fields and constructor parameters.
+依赖注入关系，目前用于 Java/Spring 增强功能中注入的字段和构造函数参数。
 
 ### CONSUMES / PRODUCES
-Data or event flow relationships emitted by specialised parsers when a source consumes or produces a named resource.
+由特殊解析器在源代码消费或产生命名资源时生成的数据或事件流关系。
 
 ### TEMPORAL_STUB
-Temporal dependency placeholder emitted by specialised parsers when a time/order relationship is detected but cannot be resolved to a stronger edge type.
+当检测到时间/顺序关系但无法解析为更强边类型时，由特殊解析器生成的 Temporal 依赖占位符。
 
 ### DEPENDS_ON_CONFIG
-A binding from code to externalised configuration, emitted by the Spring enrichment for `@ConfigurationProperties` classes and the `ConfigProperty` nodes parsed out of `application.properties` / `application.yml`.
+代码与外部化配置之间的绑定关系，由 Spring 增强功能为 `@ConfigurationProperties` 类以及从 `application.properties` / `application.yml` 解析出的 `ConfigProperty` 节点生成。
 
 ### HANDLES
-A handler relationship between a dispatch point and the method that services it — Spring request mappings binding an `Endpoint` node to its controller method, and `@EventListener` methods binding to the event they consume.
+派发点与处理它的方法之间的处理关系——Spring 请求映射将 `Endpoint` 节点绑定到其控制器方法，`@EventListener` 方法绑定到其消费的事件。
 
 ### TRIGGERS
-A scheduled invocation, emitted for `@Scheduled` methods to link the synthesised `Scheduler` node to the method it fires.
+调度调用关系，为 `@Scheduled` 方法生成，将合成的 `Scheduler` 节点链接到其触发的方法。
 
 ### PUBLISHES
-An event-publication relationship, emitted where code publishes a Spring application event.
+事件发布关系，在代码发布 Spring 应用事件时生成。
 
-> `OVERRIDES` appears in the impact-scoring tables (`constants.py`) but is not emitted by any parser today.
+> `OVERRIDES` 出现在影响评分表（`constants.py`）中，但目前没有任何解析器生成它。
 
-## Qualified Name Format
+## 限定名称格式
 
-Nodes are uniquely identified by qualified names:
+节点通过限定名称唯一标识：
 
 ```
-# File node
+# File 节点
 /absolute/path/to/file.py
 
-# Top-level function
+# 顶级函数
 /absolute/path/to/file.py::function_name
 
-# Method in a class
+# 类中的方法
 /absolute/path/to/file.py::ClassName.method_name
 
-# Nested class method
+# 嵌套类的方法
 /absolute/path/to/file.py::OuterClass.InnerClass.method_name
 ```
 
-## SQLite Tables
+## SQLite 表
 
 ```sql
--- Nodes table
+-- 节点表
 CREATE TABLE nodes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     kind TEXT NOT NULL,
@@ -194,7 +194,7 @@ CREATE TABLE nodes (
     updated_at REAL NOT NULL
 );
 
--- Edges table
+-- 边表
 CREATE TABLE edges (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     kind TEXT NOT NULL,
@@ -208,13 +208,13 @@ CREATE TABLE edges (
     updated_at REAL NOT NULL
 );
 
--- Metadata table
+-- 元数据表
 CREATE TABLE metadata (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
 
--- Flows table (v2.0)
+-- 流程表（v2.0）
 CREATE TABLE flows (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -228,7 +228,7 @@ CREATE TABLE flows (
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Flow memberships table (v2.0)
+-- 流程成员表（v2.0）
 CREATE TABLE flow_memberships (
     flow_id INTEGER NOT NULL,
     node_id INTEGER NOT NULL,
@@ -236,7 +236,7 @@ CREATE TABLE flow_memberships (
     PRIMARY KEY (flow_id, node_id)
 );
 
--- Communities table (v2.0)
+-- 社区表（v2.0）
 CREATE TABLE communities (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -249,14 +249,14 @@ CREATE TABLE communities (
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Full-text search virtual table (v2.0)
+-- 全文搜索虚拟表（v2.0）
 CREATE VIRTUAL TABLE nodes_fts USING fts5(
     name, qualified_name, file_path, signature,
     content='nodes', content_rowid='rowid',
     tokenize='porter unicode61'
 );
 
--- Token-efficient summary tables (v6)
+-- Token 高效摘要表（v6）
 CREATE TABLE community_summaries (
     community_id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
@@ -287,7 +287,7 @@ CREATE TABLE risk_index (
     last_computed TEXT DEFAULT ''
 );
 
--- Embeddings table, stored in the embeddings database
+-- 嵌入表，存储在嵌入数据库中
 CREATE TABLE embeddings (
     qualified_name TEXT PRIMARY KEY,
     vector BLOB NOT NULL,
@@ -296,4 +296,4 @@ CREATE TABLE embeddings (
 );
 ```
 
-Indexes include qualified-name, file-path, node-kind, edge source/target/kind, community, flow criticality, risk score, compound edge lookup indexes, and the composite edge upsert index.
+索引覆盖限定名称、文件路径、节点类型、边的 source/target/kind、社区、流程关键度、风险评分、复合边查找索引以及复合边 upsert 索引。

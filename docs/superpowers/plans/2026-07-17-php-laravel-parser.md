@@ -1,167 +1,126 @@
-# PHP and Laravel Parser Port Implementation Plan
+# PHP 与 Laravel 解析器移植实现计划
 
-> **Execution:** Follow strict red/green/refactor order. Do not combine surfaces
-> before the preceding focused test is green.
+> **执行：** 严格遵循红/绿/重构顺序。在前一个专注测试变绿之前，不要合并界面。
 
-**Goal:** Port the viable PHP/Laravel behavior from closed PR #252 onto current
-`main` while retaining stronger existing PHP calls/imports and adding the
-required correctness, repository-boundary, and process-pool coverage.
+**目标：** 将可行的 PHP/Laravel 行为从已关闭的 PR #252 移植到当前 `main`，同时保留更强的现有 PHP 调用/导入，并添加所需的正确性、仓库边界和进程池覆盖。
 
-**Architecture:** Extend the generic PHP syntax tables minimally. Keep Composer
-resolution in bounded immutable helpers. Parse Blade through a dedicated
-lightweight branch. Add Laravel edges in an independent PHP AST post-pass so
-the generic recursive extractor remains unchanged.
+**架构：** 最小化扩展通用 PHP 语法表。将 Composer 解析保留在有界不可变辅助函数中。通过专用轻量级分支解析 Blade。在独立的 PHP AST 后处理通道中添加 Laravel 边，使通用递归提取器保持不变。
 
-**Source attribution:** The feature commit must include
-`Co-authored-by: Minidoracat <minidora0702@gmail.com>`.
+**来源归属：** 功能提交必须包含 `Co-authored-by: Minidoracat <minidora0702@gmail.com>`。
 
 ---
 
-## Task 1: PHP syntax and PHP-only flow entry points
+## 任务 1：PHP 语法和 PHP 专用流程入口点
 
-**Files:**
+**文件：**
 
-- Modify: `tests/test_multilang.py`
-- Modify: `tests/test_flows.py`
-- Modify: `code_review_graph/parser.py`
-- Modify: `code_review_graph/flows.py`
+- 修改：`tests/test_multilang.py`
+- 修改：`tests/test_flows.py`
+- 修改：`code_review_graph/parser.py`
+- 修改：`code_review_graph/flows.py`
 
-1. Add focused tests for trait and enum Class nodes, `new` CALLS, PHP
-   extends/implements targets, and unchanged existing scoped/member call
-   formatting.
-2. Add flow tests proving called PHP `boot`, `register`, and `__invoke`
-   methods are entries while identically named Python methods are not.
-3. Run both focused commands and confirm the new assertions fail for missing
-   behavior:
+1. 为 trait 和枚举 Class 节点、`new` CALLS、PHP extends/implements 目标，以及不变的现有作用域/成员调用格式化添加专注测试。
+2. 添加流程测试，证明被调用的 PHP `boot`、`register` 和 `__invoke` 方法是入口点，而相同名称的 Python 方法不是。
+3. 运行两个专注命令，确认新断言因缺少行为而失败：
    - `uv run --frozen --no-sync pytest -q tests/test_multilang.py -k PHP`
    - `uv run --frozen --no-sync pytest -q tests/test_flows.py -k php_entry`
-4. Add only the PHP table, object-creation name, base-clause, and
-   language-scoped flow changes.
-5. Re-run the focused tests and refactor only while green.
+4. 仅添加 PHP 表、对象创建名称、基类子句和语言范围流程变更。
+5. 重新运行专注测试，仅在绿色时重构。
 
-## Task 2: Shape-safe, repository-bounded Composer PSR-4
+## 任务 2：形状安全、仓库有界的 Composer PSR-4
 
-**Files:**
+**文件：**
 
-- Create: `tests/test_php_laravel.py`
-- Modify: `code_review_graph/parser.py`
+- 创建：`tests/test_php_laravel.py`
+- 修改：`code_review_graph/parser.py`
 
-1. Build temporary Composer repositories and add failing tests for:
-   - normal PSR-4 resolution;
-   - longest-prefix selection;
-   - multiple directories for one prefix;
-   - merged `autoload` and `autoload-dev` directories;
-   - malformed document/section/`psr-4`/entry shapes;
-   - caller and mapping paths outside the configured repository;
-   - `..`, absolute-path, and symlink escapes;
-   - compatibility fallback when Composer has no matching file.
-2. Run:
-   `uv run --frozen --no-sync pytest -q tests/test_php_laravel.py -k composer`
-   and confirm failures are missing-resolution failures, not fixture errors.
-3. Store a resolved repository root on `CodeParser`.
-4. Add a bounded Composer ancestor search and immutable mapping loader.
-   Validate JSON shapes, preserve all directories, merge sections, normalize
-   prefixes, sort longest-first, and require resolved paths to stay within the
-   root.
-5. Integrate Composer before the existing PHP ancestor fallback.
-6. Re-run the focused tests.
+1. 构建临时 Composer 仓库，为以下情况添加失败测试：
+   - 正常 PSR-4 解析；
+   - 最长前缀选择；
+   - 一个前缀的多个目录；
+   - 合并 `autoload` 和 `autoload-dev` 目录；
+   - 畸形文档/节/`psr-4`/条目形状；
+   - 调用方和映射路径在配置仓库之外；
+   - `..`、绝对路径和符号链接转义；
+   - Composer 没有匹配文件时的兼容性回退。
+2. 运行：`uv run --frozen --no-sync pytest -q tests/test_php_laravel.py -k composer`，确认失败是缺少解析的失败，而非 fixture 错误。
+3. 在 `CodeParser` 上存储解析后的仓库根目录。
+4. 添加有界 Composer 祖先搜索和不可变映射加载器。验证 JSON 形状，保留所有目录，合并节，规范化前缀，按最长优先排序，并要求解析路径保留在根目录内。
+5. 在现有 PHP 祖先回退之前集成 Composer。
+6. 重新运行专注测试。
 
-## Task 3: Composer cache and worker behavior
+## 任务 3：Composer 缓存和工作进程行为
 
-**Files:**
+**文件：**
 
-- Modify: `tests/test_php_laravel.py`
-- Modify: `code_review_graph/parser.py`
+- 修改：`tests/test_php_laravel.py`
+- 修改：`code_review_graph/parser.py`
 
-1. Add failing cache tests proving:
-   - independent parser instances reuse an unchanged Composer file;
-   - a changed stat key reloads it;
-   - repositories do not share cached mappings.
-2. Add a bounded process-local cache keyed by Composer path, repository root,
-   `mtime_ns`, and size, returning only immutable data.
-3. Re-run Composer tests.
+1. 添加失败缓存测试，证明：
+   - 独立解析器实例复用不变的 Composer 文件；
+   - 变更的 stat 键重新加载它；
+   - 仓库不共享缓存的映射。
+2. 添加以 Composer 路径、仓库根目录、`mtime_ns` 和大小为键的有界进程本地缓存，仅返回不可变数据。
+3. 重新运行 Composer 测试。
 
-## Task 4: Blade parsing with comments and escapes
+## 任务 4：带注释和转义的 Blade 解析
 
-**Files:**
+**文件：**
 
-- Modify: `tests/test_php_laravel.py`
-- Modify: `code_review_graph/parser.py`
+- 修改：`tests/test_php_laravel.py`
+- 修改：`code_review_graph/parser.py`
 
-1. Add failing tests for compound-extension detection, File node shape,
-   `@extends`/`@include`/`@component` imports, `@livewire` references,
-   exact line numbers, Blade-comment suppression, `@@` escape suppression,
-   unterminated comments, invalid UTF-8, and ordinary PHP isolation.
-2. Run:
-   `uv run --frozen --no-sync pytest -q tests/test_php_laravel.py -k blade`.
-3. Add Blade detection, comment masking that preserves newlines/offsets, and a
-   negative-lookbehind directive matcher.
-4. Re-run the focused tests.
+1. 为复合扩展名检测、File 节点形状、`@extends`/`@include`/`@component` 导入、`@livewire` 引用、精确行号、Blade 注释抑制、`@@` 转义抑制、未终止注释、无效 UTF-8 和普通 PHP 隔离添加失败测试。
+2. 运行：`uv run --frozen --no-sync pytest -q tests/test_php_laravel.py -k blade`。
+3. 添加 Blade 检测、保留换行符/偏移的注释遮盖，以及负向后视指令匹配器。
+4. 重新运行专注测试。
 
-## Task 5: Evidence-gated Laravel semantic edges
+## 任务 5：证据门控的 Laravel 语义边
 
-**Files:**
+**文件：**
 
-- Modify: `tests/test_php_laravel.py`
-- Modify: `code_review_graph/parser.py`
+- 修改：`tests/test_php_laravel.py`
+- 修改：`code_review_graph/parser.py`
 
-1. Add positive failing tests for Route facade aliases/FQCNs, controller import
-   aliases/FQCNs, Eloquent Model aliases/FQCNs, relationship targets, namespace
-   blocks, and Composer-qualified graph targets.
-2. Add negative failing tests for unrelated `Route` classes, missing facade
-   imports, dynamic route handlers, non-Model classes, wrong receivers,
-   similarly named methods, and non-`::class` arguments.
-3. Assert each positive case still has the exact generic CALLS target already
-   produced by `main`, with no duplicate generic edge.
-4. Run:
-   `uv run --frozen --no-sync pytest -q tests/test_php_laravel.py -k laravel`.
-5. Add namespace-local PHP import bindings with aliases/grouped imports.
-6. Add the standalone PHP semantic AST post-pass. Resolve semantic targets
-   through Composer where possible; otherwise emit stable short targets.
-7. Re-run the focused tests and inspect edge lists for duplicates.
+1. 为 Route facade 别名/FQCN、控制器导入别名/FQCN、Eloquent Model 别名/FQCN、关系目标、命名空间块和 Composer 限定图谱目标添加正向失败测试。
+2. 为无关 `Route` 类、缺少 facade 导入、动态路由处理器、非 Model 类、错误接收者、类似命名方法和非 `::class` 参数添加负向失败测试。
+3. 断言每个正向案例仍具有 `main` 已产生的精确通用 CALLS 目标，没有重复的通用边。
+4. 运行：`uv run --frozen --no-sync pytest -q tests/test_php_laravel.py -k laravel`。
+5. 添加带别名/分组导入的命名空间局部 PHP 导入绑定。
+6. 添加独立的 PHP 语义 AST 后处理通道。尽可能通过 Composer 解析语义目标；否则发出稳定的短目标。
+7. 重新运行专注测试并检查边列表是否有重复。
 
-## Task 6: Serial/process-pool parity
+## 任务 6：串行/进程池对等性
 
-**Files:**
+**文件：**
 
-- Modify: `tests/test_php_laravel.py`
+- 修改：`tests/test_php_laravel.py`
 
-1. Add a Composer project with at least eight tracked PHP files.
-2. Build it once with `CRG_SERIAL_PARSE=1` and once with the real process
-   executor. Assert no errors and identical normalized nodes/edges.
-3. Run the process test outside the restricted sandbox when OS semaphore
-   access is required:
-   `uv run --frozen --no-sync pytest -q tests/test_php_laravel.py -k process_pool`.
+1. 添加包含至少八个已追踪 PHP 文件的 Composer 项目。
+2. 用 `CRG_SERIAL_PARSE=1` 构建一次，用真实进程执行器构建一次。断言无错误且归一化的节点/边相同。
+3. 当 OS 信号量访问需要时，在受限沙箱之外运行进程测试：`uv run --frozen --no-sync pytest -q tests/test_php_laravel.py -k process_pool`。
 
-## Task 7: Documentation and source attribution
+## 任务 7：文档和来源归属
 
-**Files:**
+**文件：**
 
-- Modify: `README.md`
-- Modify: `docs/FEATURES.md`
+- 修改：`README.md`
+- 修改：`docs/FEATURES.md`
 
-1. Document Composer/Blade/Laravel support without claiming heuristic-only
-   Route or Eloquent detection.
-2. Run `git diff --check`.
-3. Commit implementation and tests with the Minidoracat co-author trailer.
+1. 记录 Composer/Blade/Laravel 支持，不声称仅启发式的 Route 或 Eloquent 检测。
+2. 运行 `git diff --check`。
+3. 使用 Minidoracat 共同作者 trailer 提交实现和测试。
 
-## Task 8: Verification, graph review, and publication
+## 任务 8：验证、图谱审查和发布
 
-1. Run focused tests:
-   `uv run --frozen --no-sync pytest -q tests/test_php_laravel.py tests/test_multilang.py tests/test_flows.py tests/test_incremental.py`.
-2. Run all local CI-equivalent gates:
+1. 运行专注测试：`uv run --frozen --no-sync pytest -q tests/test_php_laravel.py tests/test_multilang.py tests/test_flows.py tests/test_incremental.py`。
+2. 运行所有本地 CI 等效门禁：
    - `uv run --frozen --no-sync ruff check code_review_graph/`
    - `uv run --frozen --no-sync --with mypy --with types-networkx mypy code_review_graph/ --ignore-missing-imports --no-strict-optional`
    - `uv run --frozen --no-sync --with 'bandit[toml]' bandit -r code_review_graph/ -c pyproject.toml`
-   - a portable local equivalent of the schema-sync comparison in
-     `.github/workflows/ci.yml`
+   - `.github/workflows/ci.yml` 中 schema 同步比较的可移植本地等效版本
    - `uv run --frozen --no-sync pytest --tb=short -q --cov=code_review_graph --cov-report=term-missing --cov-fail-under=65`
-3. Use the repository graph to detect changed risk, affected flows, and test
-   coverage; inspect any high-risk context.
-4. Fetch and rebase latest `origin/main`, rerun focused/full gates, and
-   confirm `git diff --check`.
-5. Push `codex/port-php-laravel`, open a draft PR (CI runs only for pushes to
-   `main` or pull requests), wait for the full PR CI to pass, then mark it
-   ready.
-6. Do not change source PR #252. Update/close bead `crg-erd.2.1` only after
-   the ready PR and required CI are confirmed.
+3. 使用仓库图谱检测变更风险、受影响流程和测试覆盖；检查任何高风险上下文。
+4. 获取并变基最新的 `origin/main`，重新运行专注/完整门禁，确认 `git diff --check`。
+5. 推送 `codex/port-php-laravel`，开启草稿 PR（CI 仅在推送到 `main` 或 pull request 时运行），等待完整 PR CI 通过，然后标记为就绪。
+6. 不要修改源 PR #252。仅在就绪 PR 和必需 CI 确认后更新/关闭 bead `crg-erd.2.1`。

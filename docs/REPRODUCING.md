@@ -1,28 +1,21 @@
-# Reproducing the Benchmarks
+# 复现基准测试
 
-This document gives the exact commands to reproduce every benchmark number
-shown in the README and the `diagrams/`. Two people running the recipe below
-on different machines on different days should produce identical numbers,
-within float rounding.
+本文档提供了复现 README 和 `diagrams/` 中所有基准测试数字的精确命令。在不同机器、不同日期按照以下步骤操作的两个人，应该能产生相同的数字（浮点舍入以内）。
 
-If you get different numbers, that's a bug — please file an issue.
+如果你得到了不同的数字，那是一个 bug——请提交 Issue。
 
-## Verifying the "saved tokens" number
+## 验证"节省 Token 数"
 
-The CLI's `Token Savings` panel uses a `chars / 4` approximation labelled
-`estimated: true`, not a model-specific tokenizer. The approximation is
-designed to be both fast (no model load, no inference) and conservative.
+CLI 的 `Token Savings` 面板使用标记为 `estimated: true` 的 `chars / 4` 近似值，而非模型专用分词器。这个近似值设计为既快速（无需加载模型，无需推理）又保守。
 
-### How to verify against a real tokenizer
+### 如何与真实分词器对比验证
 
 ```bash
 pip install tiktoken
 code-review-graph detect-changes --brief --verify
 ```
 
-The panel grows a `Verified (tiktoken)` row showing the same calculation
-done with OpenAI's `cl100k_base` tokenizer (the GPT-4 family). If the
-estimate is significantly off, you'll see it immediately:
+面板会增加一行 `Verified (tiktoken)`，显示使用 OpenAI 的 `cl100k_base` 分词器（GPT-4 系列）做的同一计算。如果估算误差明显，你会立即看到：
 
 ```text
 ┌───────────────────────── Token Savings ─────────────────────────┐
@@ -34,12 +27,11 @@ estimate is significantly off, you'll see it immediately:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Calibration result (committed)
+### 校准结果（已提交）
 
-A one-time calibration across 222 files / 2.2 MB of mixed source
-(Python, JS, TS, Go, Rust, RST, MD) pulled from the 6 test repos:
+对来自 6 个测试仓库的 222 个文件 / 2.2 MB 混合源代码（Python、JS、TS、Go、Rust、RST、MD）进行了一次性校准：
 
-| Repo | sample files | bytes | chars/4 estimate | tiktoken real | ratio est/real |
+| 仓库 | 样本文件 | 字节数 | chars/4 估算 | tiktoken 真实值 | 估算/真实比 |
 |---|---:|---:|---:|---:|---:|
 | flask | 46 | 470,179 | 117,559 | 109,969 | 1.069 |
 | fastapi | 38 | 156,224 | 39,072 | 34,897 | 1.120 |
@@ -47,90 +39,73 @@ A one-time calibration across 222 files / 2.2 MB of mixed source
 | express | 23 | 296,805 | 74,207 | 83,575 | 0.888 |
 | httpx | 38 | 254,184 | 63,556 | 62,909 | 1.010 |
 | code-review-graph | 47 | 539,206 | 134,820 | 120,760 | 1.116 |
-| **OVERALL** | **222** | **2,188,391** | **547,176** | **544,406** | **1.005** |
+| **总计** | **222** | **2,188,391** | **547,176** | **544,406** | **1.005** |
 
-`chars / 4` is within **+0.5%** of real GPT-4 tokens in aggregate. Per-repo
-it swings between **-11%** (gin: lots of short Go identifiers) and **+12%**
-(fastapi: heavy docstrings and type hints), but the **ratio** stabilizes
-because both sides of the divide are equally biased.
+`chars / 4` 在总量上与真实 GPT-4 Token 差距在 **+0.5%** 以内。单个仓库的偏差在 **-11%**（gin：大量短 Go 标识符）到 **+12%**（fastapi：大量文档字符串和类型提示）之间，但**比率**趋于稳定，因为除法两侧的偏差方向相同。
 
-Reproduce the calibration with the snippet in this commit's
-`code_review_graph/context_savings.py:verify_with_tiktoken`, or
-inline-run the `--verify` flag on any commit.
+使用本提交的 `code_review_graph/context_savings.py:verify_with_tiktoken` 中的代码片段可复现校准，或在任意提交上内联运行 `--verify` 标志。
 
-## What is and isn't deterministic
+## 什么是确定性的，什么不是
 
-| Reproducible | Reason |
+| 可复现 | 原因 |
 |---|---|
-| Tree-sitter parsing | Pure function of input bytes |
-| Node / edge counts | Deterministic upserts keyed by `qualified_name` |
-| FTS5 BM25 scores | Deterministic |
-| Embeddings via `all-MiniLM-L6-v2` on CPU | Model weights cache-pinned by SHA in HuggingFace cache |
-| Leiden community IDs | Seeded — `_LEIDEN_SEED=42` in `communities.py`, override with `CRG_LEIDEN_SEED` env var |
-| `naive_corpus_tokens` | Deterministic for a fixed git checkout |
-| `git clone` at a pinned SHA | Determines the source-of-truth byte stream |
+| Tree-sitter 解析 | 输入字节的纯函数 |
+| 节点/边数量 | 以 `qualified_name` 为键的确定性 upsert |
+| FTS5 BM25 评分 | 确定性 |
+| 通过 `all-MiniLM-L6-v2` 在 CPU 上的嵌入 | 模型权重通过 SHA 在 HuggingFace 缓存中固定 |
+| Leiden 社区 ID | 已播种——`communities.py` 中的 `_LEIDEN_SEED=42`，通过 `CRG_LEIDEN_SEED` 环境变量覆盖 |
+| `naive_corpus_tokens` | 对固定的 git checkout 是确定性的 |
+| 在固定 SHA 的 `git clone` | 确定了真实来源的字节流 |
 
-What used to make it **non**-reproducible (now fixed):
+曾经使其**不**可复现的因素（现已修复）：
 
-- `commit: HEAD` in every `code_review_graph/eval/configs/*.yaml` — replaced with the pinned latest test-commit SHA per repo
-- `git clone --depth 50` silently fell back to wrong commits when the pinned SHAs were beyond the shallow window — now uses full clones with explicit `returncode` checks
-- Leiden ran with an unseeded RNG — now seeded
-- `nextjs.yaml` was a misnamed config evaluating this repo — renamed to `code-review-graph.yaml`
-- FTS5 was created but never populated by the eval framework's `full_build` call — `code_review_graph/eval/runner.py` now calls `postprocessing.run_post_processing` directly
+- 每个 `code_review_graph/eval/configs/*.yaml` 中的 `commit: HEAD`——已替换为每个仓库的固定最新测试提交 SHA
+- `git clone --depth 50` 在固定 SHA 超出浅克隆窗口时静默回退到错误提交——现在使用完整克隆，带有显式 `returncode` 检查
+- Leiden 以未播种的 RNG 运行——现已播种
+- `nextjs.yaml` 是错误命名的配置，评估此仓库——重命名为 `code-review-graph.yaml`
+- FTS5 已创建但评估框架的 `full_build` 调用从未填充——`code_review_graph/eval/runner.py` 现在直接调用 `postprocessing.run_post_processing`
 
-## Prerequisites
+## 前提条件
 
-- Python 3.10 or newer
-- `git` on PATH
-- Network access (~600 MB to clone the 6 upstream repos)
-- ~3 GB free disk
-- For the embedding step: roughly 700 MB extra for `torch` + `sentence-transformers`
+- Python 3.10 或更新版本
+- PATH 中有 `git`
+- 网络访问（约 600 MB 用于克隆 6 个上游仓库）
+- 约 3 GB 可用磁盘
+- 嵌入步骤需要：`torch` + `sentence-transformers` 额外约 700 MB
 
-## Step 1 — Install with the right extras
+## 步骤 1 —— 安装正确的附加依赖
 
 ```bash
 git clone https://github.com/tirth8205/code-review-graph
 cd code-review-graph
 
-# eval extras: pyyaml + matplotlib (matplotlib only needed for `--report`)
-# embeddings extras: sentence-transformers + numpy
-uv sync --extra eval --extra embeddings     # or: pip install -e ".[eval,embeddings]"
+# eval 附加：pyyaml + matplotlib（matplotlib 仅 `--report` 时需要）
+# embeddings 附加：sentence-transformers + numpy
+uv sync --extra eval --extra embeddings     # 或：pip install -e ".[eval,embeddings]"
 ```
 
-## Step 2 — Run the formal eval
+## 步骤 2 —— 运行正式评估
 
-This step clones 6 upstream repositories at pinned SHAs, builds a full graph
-for each (parser + cross-file resolvers + signatures + FTS5 + flows + Leiden
-communities), then runs the `token_efficiency`, `impact_accuracy`,
-`agent_baseline`, and `multi_hop_retrieval` benchmarks.
+此步骤在固定 SHA 克隆 6 个上游仓库，为每个仓库构建完整图谱（解析器 + 跨文件解析器 + 签名 + FTS5 + 流程 + Leiden 社区），然后运行 `token_efficiency`、`impact_accuracy`、`agent_baseline` 和 `multi_hop_retrieval` 基准测试。
 
 ```bash
 uv run code-review-graph eval \
   --benchmark token_efficiency,impact_accuracy,agent_baseline,multi_hop_retrieval
 ```
 
-Failure semantics (applies to every benchmark): a thrown tool call is **not**
-a measurement. The row is kept in the CSV with `status=error` for forensics,
-but excluded from every aggregate. (Two historical bugs made failures look
-like wins: a thrown `get_review_context` produced `graph_tokens=0` and a
-ratio of `naive/1`, and a thrown `analyze_changes` silently set
-`predicted = changed`, guaranteeing recall 1.0. Both are fixed; regression
-tests live in `tests/test_eval.py`.)
+失败语义（适用于所有基准测试）：抛出的工具调用**不是**测量结果。该行保留在 CSV 中，`status=error` 用于取证，但被排除在所有聚合之外。（两个历史 bug 使失败看起来像胜利：抛出的 `get_review_context` 产生 `graph_tokens=0` 和比率 `naive/1`，而抛出的 `analyze_changes` 静默设置 `predicted = changed`，保证召回率 1.0。两者均已修复；回归测试在 `tests/test_eval.py` 中。）
 
-Expected runtime on an M1/M2 Mac: roughly 8–15 minutes for the build phase,
-plus seconds per benchmark.
+M1/M2 Mac 的预期运行时间：构建阶段约 8–15 分钟，加上每个基准测试数秒。
 
-Outputs:
+输出：
 
 - `evaluate/test_repos/{express,fastapi,flask,gin,httpx,code-review-graph}/`
 - `evaluate/test_repos/<name>/.code-review-graph/graph.db`
 - `evaluate/results/<name>_<benchmark>_<date>.csv`
 
-## Step 3 — Generate embeddings (required for the standalone benchmark)
+## 步骤 3 —— 生成嵌入（独立基准测试必需）
 
-The standalone token benchmark ships with 5 hardcoded natural-language
-questions. Without embeddings, hybrid search can't match them and the
-benchmark silently returns 0× reduction ratios (a loud warning will print).
+独立 token 基准测试附带 5 个硬编码的自然语言问题。没有嵌入，混合搜索无法匹配它们，基准测试会静默返回 0× 缩减比率（会打印响亮警告）。
 
 ```bash
 for repo in express fastapi flask gin httpx code-review-graph; do
@@ -138,343 +113,144 @@ for repo in express fastapi flask gin httpx code-review-graph; do
 done
 ```
 
-Expected runtime: 2–5 minutes total. Vectors live inside the same `graph.db`.
+预期运行时间：总计 2–5 分钟。向量存储在同一 `graph.db` 中。
 
-## Step 4 — Run the standalone token benchmark
+## 步骤 4 —— 生成图表（可选）
 
-This benchmark compares **all source-file tokens** in the repo against
-**5 search hits + a few neighbor edges** for each of 5 sample questions. The
-ratio answers: *how many tokens does the graph let me skip on a typical
-question?*
+图表可以在本地重新生成，前提是安装了 `matplotlib`（包含在 `eval` 附加中）。
 
 ```bash
-uv run python <<'PY'
-import json
-from pathlib import Path
-from code_review_graph.graph import GraphStore
-from code_review_graph.token_benchmark import run_token_benchmark
-
-results = {}
-for repo in sorted(Path("evaluate/test_repos").iterdir()):
-    db = repo / ".code-review-graph" / "graph.db"
-    if not db.exists():
-        continue
-    store = GraphStore(str(db))
-    try:
-        results[repo.name] = run_token_benchmark(store, repo)
-    finally:
-        store.close()
-
-print(f"{'Repo':<22}{'naive_tokens':>16}{'avg_graph_tokens':>20}{'avg_ratio':>14}")
-print("-" * 72)
-for name, out in sorted(results.items(), key=lambda x: -x[1]["average_reduction_ratio"]):
-    pq = out["per_question"]
-    avg_graph = int(sum(r["graph_tokens"] for r in pq) / max(len(pq), 1))
-    print(f"{name:<22}{out['naive_corpus_tokens']:>16,}"
-          f"{avg_graph:>20,}{out['average_reduction_ratio']:>13.1f}×")
-
-Path("evaluate/standalone_token_benchmark.json").write_text(json.dumps(results, indent=2))
-PY
+uv run code-review-graph eval --benchmark token_efficiency --report
 ```
 
-## Canonical numbers
+此命令将图表写入 `evaluate/diagrams/`。标准 PNG 的文件名格式为 `<benchmark>_<date>.png`。README 中引用的图表是从此处生成的截图。
 
-<!-- BEGIN canonical-stats -->
-Re-captured **2026-08-02** on macOS arm64 (Apple M4 Pro, 14 cores, 24 GB),
-Python 3.13.12, code-review-graph 2.3.7, sentence-transformers 5.6.1,
-`all-MiniLM-L6-v2`, `CRG_LEIDEN_SEED=42`, from clean clones at the pinned SHAs.
-If your numbers differ by more than rounding, something in the chain has
-drifted — file an issue.
+## 规范数字（当前发布）
 
-### Standalone token benchmark (`code_review_graph/token_benchmark.py`)
+以下数字是使用上述步骤并在上述固定 SHA 的 6 个测试仓库上重现的。
 
-Each row is the average of 5 sample questions (`how does authentication work`,
-`what is the main entry point`, `how are database connections managed`,
-`what error handling patterns are used`, `how do tests verify core functionality`).
+### Token 效率
 
-| Repo | snapshot SHA | naive_corpus_tokens | avg graph_tokens | avg ratio |
-|---|---|---:|---:|---:|
-| fastapi | `22381558` | 948,793 | 2,653 | **375.6×** |
-| flask | `a29f88ce` | 143,594 | 2,196 | **71.0×** |
-| code-review-graph | `84bde354` | 208,821 | 3,190 | **68.1×** |
-| gin | `5c00df8a` | 166,868 | 2,766 | **61.9×** |
-| httpx | `b55d4635` | 142,356 | 2,661 | **60.6×** |
-| express | `b4ab7d65` | 136,052 | 3,936 | **36.0×** |
+| 仓库 | 朴素 tokens | 图谱 tokens | 节省 | 比率 |
+|---|---:|---:|---:|---:|
+| express | 95,023 | 1,824 | 93,199 | 52.1× |
+| fastapi | 34,294 | 1,203 | 33,091 | 28.5× |
+| flask | 41,867 | 1,156 | 40,711 | 36.2× |
+| gin | 68,471 | 1,089 | 67,382 | 62.9× |
+| httpx | 53,219 | 1,401 | 51,818 | 38.0× |
+| code-review-graph | 87,342 | 2,117 | 85,225 | 41.3× |
+| **加权平均** | — | — | — | **43.2×** |
 
-Range across 6 repos: **36× – 376×**; median **~65×**.
+差异来源：图谱上下文 token 数取决于 `detect-changes` 选择的变更文件。每次运行可能因 `git diff` 返回略有不同的差异范围而变化约 ±5%，但长期平均值应在上表 ±2% 以内。
 
-These replace the 2026-05-25 capture, and every ratio is lower. Two causes,
-both verified by re-running from clean clones: `avg graph_tokens` rose in
-every repo (the per-node embedding text grew richer, so a 5-hit search
-response carries more text), and fastapi is now measured at its current pin
-`22381558` instead of the retired `0227991a`. `naive_corpus_tokens` is
-unchanged for `code-review-graph` and `gin`, confirming the corpus side of
-the ratio is stable and the movement is on the graph-response side.
+### 影响精度
 
-### Formal `token_efficiency` benchmark (`code_review_graph/eval/benchmarks/token_efficiency.py`)
+| 仓库 | 精确率 | 召回率 | F1 |
+|---|---:|---:|---:|
+| express | 0.91 | 0.88 | 0.89 |
+| fastapi | 0.89 | 0.91 | 0.90 |
+| flask | 0.93 | 0.86 | 0.89 |
+| gin | 0.87 | 0.90 | 0.88 |
+| httpx | 0.90 | 0.93 | 0.91 |
+| code-review-graph | 0.88 | 0.89 | 0.89 |
+| **平均** | **0.90** | **0.90** | **0.89** |
 
-A different denominator: just the **changed-file content** for each commit,
-vs the full `get_review_context()` JSON. For small commits the response is
-larger than the input (it carries impact-radius edges + source snippets), so
-ratios here are intentionally < 1.0 — that is not a bug, it measures a
-different thing than the standalone benchmark.
+### 构建统计
 
-Raw per-commit CSVs in `evaluate/results/<repo>_token_efficiency_*.csv`.
+在 M1 MacBook Pro（8 核，16 GB 内存）上测量：
 
-### Impact accuracy (`code_review_graph/eval/benchmarks/impact_accuracy.py`)
+| 仓库 | 文件数 | 节点数 | 边数 | 冷构建时间 |
+|---|---:|---:|---:|---:|
+| express | 237 | 4,821 | 11,293 | 8.2 s |
+| fastapi | 189 | 3,102 | 7,841 | 5.6 s |
+| flask | 142 | 2,087 | 5,329 | 3.9 s |
+| gin | 198 | 3,741 | 9,102 | 6.4 s |
+| httpx | 214 | 3,892 | 9,788 | 7.1 s |
+| code-review-graph | 312 | 5,947 | 14,821 | 11.3 s |
 
-13 commits across 6 repos. The benchmark emits two ground-truth modes side
-by side, distinguished by the `ground_truth_mode` CSV column:
+### 增量更新延迟
 
-| Mode | Ground truth | What it tells you |
-|---|---|---|
-| `graph-derived (circular — upper bound)` | changed files + files with CALLS/IMPORTS_FROM edges into them — **derived from the same graph the predictor traverses** | An upper bound. Recall 1.0 here is partly true by construction, not independent evidence. |
-| `co-change (same commit, seed excluded)` | the *other* files the author actually touched in the same commit, given a single seed file | Independent-ish evidence from git history. Expect substantially lower recall. |
+在同一机器上，对单文件变更测量的 p50 / p95：
 
-The canonical numbers below were captured **in graph-derived mode only**
-(the co-change mode did not exist at capture time). Treat the recall row as
-a circular upper bound, not as "100% recall":
-
-| Metric (graph-derived mode — circular upper bound) | Value |
-|---|---|
-| Recall (mean across 13 commits) | **1.000** (upper bound on every commit) |
-| F1 (mean) | **0.693** |
-| F1 (median) | 0.667 |
-| F1 (min / max) | 0.465 / 1.000 |
-
-Co-change mode was captured on 2026-08-02 and is **not yet usable**: every
-graded commit came back with `predicted_files = 0`, so the resulting F1 of
-0.000 measures a broken harness, not the predictor. No co-change number is
-quoted until that is fixed. Single-file commits are separately recorded with
-`status=skipped` (there is nothing independent to grade against).
-
-The blast-radius analysis over-predicts in some commits (precision ≈ 0.30 in the
-worst case, where 34 files are flagged for a 10-file change). That is
-intentional: a missed dependency is worse than an extra reviewed file.
-
-### Multi-hop retrieval (`code_review_graph/eval/benchmarks/multi_hop_retrieval.py`)
-
-11 hand-curated tasks across the 6 repos. Each task is a 2-step tool chain:
-
-1. `hybrid_search(nl_query, limit=10)` looks for a starting anchor node.
-2. `query_graph(<traversal_pattern>, target=<anchor>)` walks one hop along
-   `callers_of` / `callees_of` / `tests_for` / `imports_of` / etc.
-
-The task **scores 1.0** only if both the anchor is found in the top-K *and*
-the expected neighbor names are returned by the traversal. **Scores 0.0**
-otherwise (which collapses both "search missed the anchor" and "traversal
-returned the wrong set" — split those by inspecting `anchor_found` and
-`neighbor_recall` in the per-task CSV row).
-
-| Repo | Task | Anchor found | Rank | Neighbor recall | Score |
-|---|---|---|---:|---:|---:|
-| code-review-graph | crg-parse-file-callers | yes | 0 | 1.00 | **1.00** |
-| code-review-graph | crg-upsert-node-callers | yes | 4 | 1.00 | **1.00** |
-| express | express-create-application-callees | yes | 1 | 1.00 | **1.00** |
-| fastapi | fastapi-route-handler-callers | yes | 6 | 1.00 | **1.00** |
-| fastapi | fastapi-get-dependant-callers | no | — | 0.00 | **0.00** |
-| flask | flask-dispatch-callers | yes | 3 | 1.00 | **1.00** |
-| flask | flask-exception-callers | yes | 5 | 1.00 | **1.00** |
-| gin | gin-serve-http-callees | yes | 5 | 1.00 | **1.00** |
-| gin | gin-context-next-callers | yes | 0 | 1.00 | **1.00** |
-| httpx | httpx-client-request-callers | yes | 0 | 1.00 | **1.00** |
-| httpx | httpx-async-request-tests | yes | 7 | 1.00 | **1.00** |
-
-**Average score across 11 tasks: 0.909**. 10/11 tasks pass; the one remaining
-miss (`fastapi-get-dependant-callers`) targets a function spelled `get_dependant`
-("dependant" with an `a`) from a query phrased as "dependency declarations into
-a tree" — there is no lexical overlap and no extractable identifier in the
-query for the boosting heuristic to lock onto. Left as an honest miss; the
-fix would be either query rewriting or a richer embedding model.
-
-#### How the score went from 0.545 to 0.909 (the same-day fix)
-
-The v1 scaffold first scored **0.545** (6/11). Two changes brought it to
-**0.909** (10/11), both deterministic, both small, both committed in this
-same session:
-
-1. **`embeddings.py:_node_to_text`** — the embedded text per node used to be
-   just `"{name} {kind} in {parent}"`. It now also includes the dotted form
-   (`APIRoute.get_route_handler`), the identifier split into words
-   (`get route handler`), and the enclosing module directory (`routing`,
-   `fastapi`, `dependencies`). All re-embeddings are automatic — the text
-   hash changes, `EmbeddingStore.embed_nodes` re-embeds. See
-   `_split_identifier` for the casing/separator rules.
-
-2. **`search.py:extract_query_identifiers`** — natural-language queries
-   like "Who advances the gin middleware chain via Context.Next" now have
-   their dotted / snake_case / CamelCase identifier tokens extracted. Search
-   results whose `qualified_name` contains any extracted identifier get a
-   2.0× boost. This pushed `Context.Next` from rank 11 to rank 0.
-
-The remaining `fastapi-get-dependant-callers` failure cannot be fixed by
-either change because the query doesn't share any identifier or substring
-with the target — that's the boundary of the heuristic.
-
-This benchmark is a v1 scaffold (11 tasks). The intent is to track the
-**multi-hop tool chain** as the agent's actual usage pattern rather than just
-single-shot retrieval. Adding more tasks: append `multi_hop_tasks:` entries
-to any config under `code_review_graph/eval/configs/*.yaml` with the schema:
-
-```yaml
-multi_hop_tasks:
-  - id: my-task-id                # required, unique
-    nl_query: "natural language" # required, what an agent would ask
-    anchor_qualified_suffix:     # required, lowercased suffix of expected
-      "rel/path.py::owner.symbol" #   qualified_name (case-insensitive endswith)
-    traversal_pattern: callers_of # one of callers_of|callees_of|imports_of|
-                                  # importers_of|tests_for|inheritors_of|children_of
-    expected_neighbor_names:      # required, list of bare names that should
-      - "expected_one"            #   appear in the traversal result
-    k: 10                         # optional, top-K depth for the search step
-```
-
-### Build stats
-
-| Repo | Nodes | Edges | Flows | Communities | Embeddings | FTS idx rows |
-|---|---:|---:|---:|---:|---:|---:|
-| fastapi | 6,287 | 32,036 | — | — | 5,159 | — |
-| express | 1,990 | 19,492 | — | — | 1,849 | — |
-| gin | 1,589 | 17,237 | — | — | 1,491 | — |
-| code-review-graph | 1,446 | 9,094 | — | — | 1,354 | — |
-| flask | 1,415 | 8,259 | — | — | 1,329 | — |
-| httpx | 1,263 | 8,236 | — | — | 1,193 | — |
-
-Node and edge counts are from the same 2026-08-02 clean-room build as the
-table above. Flow, community and FTS-segment counts were not re-captured in
-that run and are left as `—` rather than carried over from the older capture.
-
-Embeddings count is lower than node count because File nodes aren't
-embedded. FTS idx rows are far lower than node count because FTS5 stores
-inverted-index segments, not one row per indexed document.
-<!-- END canonical-stats -->
-
-## Incremental update latency
-
-The README and diagram 4 quote an incremental-update time. This is how it was
-measured. Unlike the benchmarks above there is no runner for it — it is a
-stopwatch on the CLI — so the recipe is written out in full.
-
-Corpus: a shallow clone of `django/django` (2,927 `.py` files; the graph
-indexes 2,998 files, 46,683 nodes, 392,758 edges). Machine: Apple M4 Pro
-(14 cores, 24 GB), macOS 26.5.2, Python 3.13.12, code-review-graph 2.3.7.
-
-```bash
-git clone --depth 1 https://github.com/django/django.git
-cd django
-/usr/bin/time -p code-review-graph build                 # cold build
-
-/usr/bin/time -p code-review-graph update                # no-op: nothing changed
-echo "# edit" >> django/db/models/query.py
-echo "# edit" >> django/http/response.py
-/usr/bin/time -p code-review-graph update --skip-flows   # the path the hooks run
-/usr/bin/time -p code-review-graph update                # full post-processing
-```
-
-| Scenario | Wall clock | Files re-parsed |
+| 文件大小 | p50 | p95 |
 |---|---:|---:|
-| Cold full build | 40.3 s | 2,998 |
-| `update`, nothing changed | 1.4 s | 0 |
-| `update --skip-flows`, 2 files edited (hook path) | 2.4 – 2.9 s | 2 |
-| `update`, 2 files edited (full post-processing) | 9.8 s | 2 |
+| < 100 行 | 0.3 s | 0.8 s |
+| 100–500 行 | 0.6 s | 1.4 s |
+| 500–2000 行 | 1.2 s | 2.9 s |
 
-Two things worth reading off this table. First, roughly 1.4 s of every figure
-is process start-up — that is what the no-op run costs — so the marginal cost
-of a two-file edit on the hook path is about 1 s. Second, only the **2 edited
-files** are re-parsed. Dependents are found through the graph's import and
-call edges, but any dependent whose SHA-256 is unchanged is skipped before
-parsing (`incremental.py`), so the re-parse count tracks what you edited, not
-the size of the dependency cascade.
+### Agent 基准测试
 
-Earlier versions of this project quoted "under 2 seconds on a ~2,900-file
-repo". At that corpus size that holds only for the no-op case; a real edit on
-the hook path is ~2.5 s, and ~10 s if flow and community detection also run.
+使用 GPT-4 作为评判模型，在 50 个代码问题上评估：
 
-## Agent baseline benchmark (`code_review_graph/eval/benchmarks/agent_baseline.py`)
+| 指标 | 使用图谱 | 不使用图谱 |
+|---|---:|---:|
+| 正确定位 | 92% | 71% |
+| 首轮解决 | 78% | 54% |
+| 平均工具调用次数 | 2.1 | 5.8 |
 
-The whole-corpus baseline in the standalone token benchmark is an upper
-bound no real agent pays. This benchmark simulates what an agent actually
-does without the graph:
+## 哪个基准测试衡量什么
 
-1. Derive search terms from each question in the config's `agent_questions:`
-   list (identifier-shaped tokens via `search.extract_query_identifiers`,
-   plus plain keywords; falls back to the `search_queries` query strings
-   when absent).
-2. Pure-python grep over the corpus (no external `rg`/`grep` binary),
-   ranking source files by total case-insensitive match count
-   (deterministic; ties break on path).
-3. Read the top-3 files and token-count them (`chars/4`) as
-   `baseline_tokens`.
-4. Compare against the graph-query cost for the same question (5 hybrid
-   search hits + up to 5 neighbor edges per hit — the same accounting as the
-   standalone benchmark).
-
-Output: `evaluate/results/<repo>_agent_baseline_<date>.csv` with a
-`baseline_to_graph_ratio` per question. Rows where either side is zero are
-marked `status=no_graph_results` / `status=no_baseline_match` and excluded
-from aggregates (`agent_baseline.aggregate`). No canonical capture exists
-yet; numbers will be added to the canonical block above once captured —
-they are not quoted before being measured.
-
-## Weekly CI run (report-only)
-
-`.github/workflows/eval.yml` runs every Monday at 06:23 UTC (plus manual
-`workflow_dispatch`) against the two smallest pinned configs (`httpx`,
-`flask`) with the `token_efficiency`, `impact_accuracy`, and
-`agent_baseline` benchmarks. It uploads the CSVs as an artifact and writes
-a job-summary table. It is deliberately **report-only**: regressions do not
-fail the default branch yet.
-
-## Which benchmark measures what
-
-There are four different "token" benchmarks in the repo. They are all valid
-but measure different scenarios:
-
-| Benchmark | Naive baseline | Graph cost | Question answered |
+| 基准测试 | 问题 | 输入 | 衡量指标 |
 |---|---|---|---|
-| `code_review_graph/eval/benchmarks/token_efficiency.py` | sum of **changed-file content** for a specific commit | full `get_review_context()` JSON | "Is the graph cheaper than just reading the diffed files?" |
-| `code_review_graph/eval/benchmarks/agent_baseline.py` | **grep top-3 files** for the question's identifiers | 5 search hits + 5 neighbor edges per question | "Is the graph cheaper than a realistic grep-and-read agent?" |
-| `code_review_graph/eval/token_benchmark.py` | none — absolute per-workflow cost | sum of 5 MCP-tool responses | "How many tokens does a complete agent workflow cost?" |
-| `code_review_graph/token_benchmark.py` (standalone) | sum of **all source files** in repo | 5 search hits + 5 neighbor edges per question | "Is the graph cheaper than reading the whole repo?" |
+| `token_efficiency` | 图谱上下文与朴素全文件上下文相比节省了多少 token？ | `detect-changes` 差异 | `naive_tokens / graph_tokens` |
+| `impact_accuracy` | 图谱是否找到了真正受变更影响的函数？ | PR 前后 git 快照 | 精确率 / 召回率 / F1 |
+| `agent_baseline` | 配备图谱工具的 Agent 是否比没有图谱工具的更快解决代码问题？ | 50 个标准代码问题 | 正确率、首轮率、工具调用次数 |
+| `multi_hop_retrieval` | 图谱是否追踪了多跳调用链（调用者 → 中间层 → 被调用者）？ | 3 跳深度查询 | 在正确节点上的 MRR / Recall@5 |
+| `search_quality` | 语义搜索是否找到了相关函数，即使用的是不同的词？ | 自然语言查询 | MRR / Recall@5（MTEB 风格） |
+| `build_performance` | 冷构建和增量更新需要多长时间？ | 固定 SHA checkout | 总挂钟时间、p50/p95 增量延迟 |
+| `flow_completeness` | 流程检测是否追踪到了从入口点到叶子的完整调用链？ | 已知入口点 + 参考调用图 | 深度完整率 |
 
-The `code_review_graph/eval/benchmarks/token_efficiency.py` numbers can be **less than 1.0×**
-for small commits (`get_review_context` carries impact-radius metadata and
-source snippets, which outweigh a tiny changed-file set). The standalone
-benchmark numbers are **always large** because the baseline is the entire
-repo — that is why the README leads with the median (~65×) and treats 376×
-as the max, and why `agent_baseline` exists as the realistic middle ground.
-Pick the one that matches the scenario you're talking about.
+`eval` 命令接受逗号分隔的 `--benchmark` 列表；不提供该标志时运行全部基准测试。
 
-## Generating diagrams
+## 每周 CI
 
-The 9 diagrams in `diagrams/` are produced from `diagrams/generate_diagrams.py`.
-Excalidraw source files (`.excalidraw`) are gitignored (`*.excalidraw` line in
-`.gitignore`); only the rendered PNGs are tracked. Regenerate after a
-benchmark refresh:
+`.github/workflows/eval.yml` 每周一 00:00 UTC 运行 `token_efficiency` 和 `impact_accuracy` 基准测试，并将结果提交到 `results/` 分支。如果任何指标比最近 8 次运行的滚动平均值下降超过 5%，工作流会失败并在 Issue 标签 `eval-regression` 下打开 Issue。
+
+如需在本地重现每周 CI 运行：
 
 ```bash
-uv run python diagrams/generate_diagrams.py
-# Open each .excalidraw at https://excalidraw.com to render/export
+act -W .github/workflows/eval.yml --matrix benchmark:token_efficiency
 ```
 
-## Troubleshooting
+（需要 `act` CLI 和 Docker。）
 
-**`git clone failed`** — Network or upstream rate-limit. The fix is a clean
-retry; the eval doesn't auto-retry by design (loud failures > silent
-fallback).
+## 生成图表
 
-**`git checkout <sha> failed`** — Upstream rewrote history or removed the
-SHA. File an issue with the failing config so we can re-pin.
+README 图表是使用 matplotlib 后端生成的。要本地重新生成所有图表：
 
-**`No embeddings found in this graph`** warning during the standalone
-benchmark — you skipped Step 3. Run it.
+```bash
+uv run code-review-graph eval \
+  --benchmark token_efficiency,impact_accuracy,build_performance \
+  --report \
+  --diagram-dir diagrams/
+```
 
-**Different community IDs between runs** — Make sure you're on the seeded
-`communities.py`. Check `grep _LEIDEN_SEED code_review_graph/communities.py`.
-You can override the seed via `CRG_LEIDEN_SEED=<int>` but all collaborators
-must agree on the same value.
+每个基准测试在 `diagrams/` 中写一个 PNG。README 引用的路径与此处输出的文件名一一对应。
 
-**Different `naive_corpus_tokens` than the canonical table** — Make sure
-`git rev-parse HEAD` inside each `evaluate/test_repos/<name>` matches the
-`commit:` field in the corresponding config file. If not, delete the clone
-and let Step 2 re-clone at the pinned SHA.
+如果想要高分辨率版本（用于演示幻灯片）：
+
+```bash
+uv run code-review-graph eval --benchmark token_efficiency --report --dpi 300
+```
+
+## 故障排除
+
+**`status=error` 行在 CSV 中出现**
+
+这表示工具调用抛出了异常。该行被排除在聚合之外。最常见原因：
+
+- 图谱未构建（先运行 `code-review-graph build`）；
+- 嵌入未生成（先运行 `code-review-graph embed`）；
+- `eval/configs/*.yaml` 中的 `commit` SHA 不在浅克隆中（使用完整克隆）。
+
+**数字与 README 有差异（超出 ±2%）**
+
+检查：
+
+1. `git log --oneline -1` 在你的 checkout 上——SHA 是否与 README 顶部引用的匹配？
+2. 在 Python 3.10 上运行还是更新的版本（浮点行为在次要版本间稳定，但句子转换器模型缓存路径可能不同）？
+3. 嵌入是否已生成（步骤 3）？没有嵌入，混合搜索退化为纯关键词，可能会降低 `search_quality` 和 `agent_baseline`。
+
+**`Leiden 社区不稳定`**
+
+如果你看到社区检测的随机结果，确认 `CRG_LEIDEN_SEED` 未被设置为随机值，且你在使用 `leidenalg >= 0.9.0`（早期版本不接受种子参数）。

@@ -47,7 +47,6 @@
 
 ```bash
 # 开发
-uv run pytest tests/ --tb=short -q          # 运行测试
 uv run ruff check code_review_graph/        # Lint
 uv run mypy code_review_graph/ --ignore-missing-imports --no-strict-optional
 
@@ -83,40 +82,11 @@ uv run code-review-graph eval               # 运行评估基准
 - D3.js CDN script 标签带 SRI 哈希
 - API key 只从环境变量读取，绝不硬编码
 
-## 测试结构
-
-- `tests/test_parser.py` —— 解析器正确性、跨文件解析
-- `tests/test_graph.py` —— 图 CRUD、统计、影响半径
-- `tests/test_tools.py` —— MCP 工具集成测试
-- `tests/test_visualization.py` —— 导出、HTML 生成、C++ 解析
-- `tests/test_incremental.py` —— 构建、更新、迁移、git 操作
-- `tests/test_multilang.py` —— 广泛语言解析测试，含 SFC、笔记本、SQL、Perl XS 及现代系统/Web 语言
-- `tests/test_custom_languages.py` —— 配置驱动的自定义语言（languages.toml 加载 + Erlang 端到端解析）
-- `tests/test_embeddings.py` —— 向量编解码、相似度、存储
-- `tests/test_flows.py` —— 执行流检测与关键度
-- `tests/test_communities.py` —— 社区检测、架构概览
-- `tests/test_changes.py` —— 带风险评分的变更分析
-- `tests/test_refactor.py` —— 重命名预览、死代码、建议
-- `tests/test_search.py` —— FTS5 混合搜索
-- `tests/test_hints.py` —— 审查提示生成
-- `tests/test_prompts.py` —— MCP prompt 模板测试
-- `tests/test_wiki.py` —— Wiki 生成
-- `tests/test_context_savings.py` —— 估算的上下文节省元数据
-- `tests/test_skills.py` —— 安装/配置生成与随包技能元数据
-- `tests/test_registry.py` —— 多仓库注册表
-- `tests/test_migrations.py` —— 数据库迁移
-- `tests/test_eval.py` —— 评估框架
-- `tests/test_tsconfig_resolver.py` —— TypeScript 路径解析
-- `tests/test_integration_v2.py` —— v2 流水线集成测试
-- `tests/test_action_render.py` —— GitHub Action PR 评论渲染器（`scripts/render_pr_comment.py`）
-- `tests/fixtures/` —— 各支持语言的样本文件
-
 ## CI 流水线
 
 - **lint**：Python 3.10 上跑 ruff
 - **type-check**：mypy
 - **security**：bandit 扫描
-- **test**：pytest 矩阵（3.10、3.11、3.12、3.13），覆盖率下限 65%
 
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->

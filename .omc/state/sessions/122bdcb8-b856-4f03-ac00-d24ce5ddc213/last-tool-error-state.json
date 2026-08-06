@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"ls -1 /mnt/c/Users/shaoqisun/Desktop/code-review-graph/*.md 2>/dev/null\",\"description\":\"List root-level markdown files\"}",
+  "error": "Exit code 2",
+  "timestamp": "2026-08-06T07:23:24.367Z",
+  "retry_count": 1
+}

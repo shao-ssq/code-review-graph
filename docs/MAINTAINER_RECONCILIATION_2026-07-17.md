@@ -1,291 +1,184 @@
-# Maintainer reconciliation — 2026-07-17
+# 维护者协调记录 —— 2026-07-17
 
-Status: local and remote CI validation complete; ready for maintainer review.
+状态：本地和远程 CI 验证完毕；等待维护者审查。
 
-Base: `main` at `b72413c`  
-Integration branch: `codex/reconcile-open-contributions-2026-07-17`  
-Tracking issue: `crg-nqi`
+基准：`main` at `b72413c`
+集成分支：`codex/reconcile-open-contributions-2026-07-17`
+跟踪 Issue：`crg-nqi`
 
-## Outcome
+## 结果
 
-This branch is a deliberately narrow reconciliation of independently useful,
-evidence-backed fixes. It is not a release branch and it does not merge any
-large contribution wholesale. Contributor commits were retained where the
-patch was already the strongest implementation; conflict resolutions preserve
-current `main` behavior and are called out below.
+本分支是对独立有用、有证据支撑的修复进行的刻意窄化协调。它不是发布分支，也不整体合入任何大型贡献。贡献者提交在补丁已经是最强实现时被保留；冲突解决保留了当前 `main` 的行为，并在下文中一一说明。
 
-The audit snapshot covered:
+审计快照涵盖：
 
-- every local branch, worktree, stash, tracked change, and untracked path;
-- all 104 open pull requests, using paginated live data rather than a
-  single-page search result;
-- all 84 open issues, excluding pull requests;
-- all 29 repository discussions; and
-- the repository knowledge graph, affected flows, tests, release notes, and
-  current CI/review evidence.
+- 所有本地分支、worktree、stash、已追踪变更和未追踪路径；
+- 全部 104 个开放 Pull Request，使用分页实时数据而非单页搜索结果；
+- 全部 84 个开放 Issue（不含 Pull Request）；
+- 全部 29 个仓库讨论；以及
+- 仓库知识图谱、受影响的流程、测试、发布说明和当前 CI/审查证据。
 
-No remote issue or source pull request is closed by this branch. Those actions
-should happen only after this integration passes review and is merged.
+本分支不关闭任何远程 Issue 或源 Pull Request。这些操作应在本集成通过审查并合并后才进行。
 
-## Preservation and safety record
+## 保留与安全记录
 
-The primary checkout remains on `main` at `b72413c`, equal to `origin/main`.
-Its 31 untracked paths were not moved, cleaned, staged, or rewritten:
+主 checkout 仍在 `main` at `b72413c`，与 `origin/main` 相同。其 31 个未追踪路径未被移动、清理、暂存或重写：
 
-- 26 iCloud-suffixed `* 2.*` copies are byte-identical to tracked files; and
-- five unique local artifacts remain private to the checkout: `.codex/`, a
-  local transcript, `OC3_TECHNICAL_CONTRIBUTION.md`, its PDF, and
-  `PRESENTATION_BRIEF.md`.
+- 26 个带 iCloud 后缀的 `* 2.*` 副本与已追踪文件字节完全相同；以及
+- 五个唯一的本地产物仍是 checkout 的私有内容：`.codex/`、本地转录、`OC3_TECHNICAL_CONTRIBUTION.md`、其 PDF 和 `PRESENTATION_BRIEF.md`。
 
-All three stashes were preserved:
+三个 stash 全部保留：
 
-- `stash@{0}` — CI lint/test fixes from merged PRs;
-- `stash@{1}` — local `uv.lock` bump; and
-- `stash@{2}` — scaling/token-efficiency mypy fixes.
+- `stash@{0}` —— 来自已合并 PR 的 CI lint/test 修复；
+- `stash@{1}` —— 本地 `uv.lock` 升级；以及
+- `stash@{2}` —— scaling/token-efficiency mypy 修复。
 
-All pre-existing worktrees and branches were preserved, including
-`claude/hungry-morse`, `fix/incremental-flow-path-mismatch`,
-`release/v2.3.7`, `release/v2.4.0`, `review/local-fixes`, the old workflow
-branches, and their untracked worktree files. The reconciliation was performed
-only in `.claude/worktrees/codex-reconciliation`.
+所有预先存在的 worktree 和分支都被保留，包括 `claude/hungry-morse`、`fix/incremental-flow-path-mismatch`、`release/v2.3.7`、`release/v2.4.0`、`review/local-fixes`、旧的工作流分支及其未追踪 worktree 文件。协调工作仅在 `.claude/worktrees/codex-reconciliation` 中进行。
 
-Important local-branch conclusions:
+重要的本地分支结论：
 
-- `review/local-fixes` is a preservation source, not a merge candidate. Its
-  useful TESTED_BY work was extracted. Its incremental path work was disproven
-  under the real node-replacement lifecycle; unsafe PID cleanup, over-broad
-  ignore rules, raw C++ header sniffing, and scoped-call false positives also
-  remain excluded.
-- `release/v2.4.0` is the head of PR #559. Its token-budget, doctor, eval, and
-  installer surfaces remain coupled and have correctness/supply-chain
-  blockers. Four patch-equivalent commits were selected: the three-commit
-  TESTED_BY series and the independent Action path-rendering fix.
-- `release/v2.3.7` is PR #559 plus a version downgrade and must not be merged or
-  pushed as a release candidate.
-- `issue-194-specific-exception-logging` is patch-equivalent to work already on
-  `main`; the multi-word search branches are superseded or need decomposition.
+- `review/local-fixes` 是保留来源，而非合并候选。其有用的 TESTED_BY 工作已被提取。其增量路径工作已在真实节点替换生命周期下被证伪；不安全的 PID 清理、过宽泛的 ignore 规则、原始 C++ 头文件嗅探和作用域调用误报也仍被排除。
+- `release/v2.4.0` 是 PR #559 的 HEAD。其 token-budget、doctor、eval 和 installer 界面仍然耦合，有正确性/供应链阻塞因素。选取了四个补丁等效提交：三提交 TESTED_BY 系列和独立的 Action 路径渲染修复。
+- `release/v2.3.7` 是 PR #559 加上版本降级，不得作为发布候选合并或推送。
+- `issue-194-specific-exception-logging` 与 `main` 上已有的工作补丁等效；多词搜索分支已被取代或需要分解。
 
-## Selected integration
+## 选定集成
 
-| Branch commit(s) | Source | Decision and evidence |
+| 分支提交 | 来源 | 决定与证据 |
 | --- | --- | --- |
-| `34c5d00` | PR #564 | Use `#graph-svg` instead of a page-wide `svg` selector in both templates; carries focused regressions. |
-| `d8e5453` | PR #565 | Remove machine-specific hook paths, add a PATH guard, and avoid applying Bash hooks to unrelated tools. |
-| `cbf9355` | PR #573 | Resolve PHP `use`, grouped imports, aliases, functions, and constants to local files; preserves contributor attribution. |
-| `ddc8544`, `918ef13`, `580205d` | exact patch-equivalents of PR #559 commits `278e400`, `03e319e`, `a11dc04` | Correct TESTED_BY direction at every selected consumer, update dead-code analysis, and add a parser-to-store-to-query regression. This incorporates the #527 work and supersedes overlapping PR #598. |
-| `6ece151` | PR #559 commit | Render repository-relative paths in Action comments without taking the rest of the release branch. |
-| `771307e` | issue #612 | Capture bare, member, chained, and null-conditional C# receiver calls with correct caller attribution; implemented red/green with focused tests. |
-| `eeef686` | issue #613 | Keep packaged documentation fallback available through the real MCP wrapper; implemented red/green with an installed-layout regression. |
-| `571f665` | content-equivalent/rebased port of PR #578 | Replace regex JSONC stripping with a string-aware scanner so URLs and comment-like string contents survive; import-neighborhood context differs from the source patch. |
-| `df87b60`, `e5f563b` | PR #563 | Generate the uppercase `SKILL.md` filename required by the [Claude Code skills documentation](https://code.claude.com/docs/en/skills) and update regressions. This does not adopt PR #562's unnecessary lowercasing of the display name. |
-| `90408c9` | PR #354 | Refuse and preserve valid top-level arrays/scalars, while treating empty/comment-only configs as fresh objects. Conflict resolution retained PR #578's stronger string-aware JSONC parser. Production fixes for #312/#350 were intentionally omitted because they are already on `main`; their regressions remain. |
-| `0abd789` | PR #353 | Persist Kotlin/C# annotations using the established metadata shape and resolve C# namespace importers. This does not claim to solve the remaining impact-radius design in #310. |
-| `b9ec19d` | PR #393 | Repair advertised Zig parsing and add structure/call/import/test fixtures. Conflict resolution retained the newer Nix implementation on `main`. |
-| `fc549ae` | reconciliation review fix | Preserve an existing platform config byte-for-byte when its nested server collection has the wrong array/object type; red/green coverage exercises both schemas. |
-| `d611a2d` | reconciliation review fix | Generate TESTED_BY for in-source Zig tests regardless of filename and carry effective parent names through nested C# namespaces; both gaps were reproduced before implementation. |
-| `c7d7211` | reconciliation review fix | Replace recursive C# namespace discovery with an explicit stack; a 1,200-level AST regression failed before the change and now passes without truncating namespace metadata. |
+| `34c5d00` | PR #564 | 在两个模板中用 `#graph-svg` 替换全页 `svg` 选择器；携带专注回归测试。 |
+| `d8e5453` | PR #565 | 移除机器特定 hook 路径，添加 PATH 防护，避免将 Bash hook 应用于无关工具。 |
+| `cbf9355` | PR #573 | 将 PHP `use`、分组导入、别名、函数和常量解析到本地文件；保留贡献者归属。 |
+| `ddc8544`、`918ef13`、`580205d` | PR #559 提交 `278e400`、`03e319e`、`a11dc04` 的精确补丁等效 | 在每个选定消费者处修正 TESTED_BY 方向，更新死代码分析，并添加解析器到存储到查询的回归测试。这包含了 #527 的工作并取代了重叠的 PR #598。 |
+| `6ece151` | PR #559 提交 | 在 Action 评论中渲染相对于仓库的路径，不采纳发布分支的其余部分。 |
+| `771307e` | Issue #612 | 用正确的调用方归属捕获裸、成员、链式和空条件 C# 接收者调用；以专注测试实现红/绿。 |
+| `eeef686` | Issue #613 | 通过真实 MCP 包装器保持打包文档回退可用；以安装布局回归测试实现红/绿。 |
+| `571f665` | PR #578 的内容等效/变基移植 | 用字符串感知扫描器替换正则 JSONC 剥离，使 URL 和注释类字符串内容得以保留；导入邻域上下文与源补丁不同。 |
+| `df87b60`、`e5f563b` | PR #563 | 生成 [Claude Code 技能文档](https://code.claude.com/docs/en/skills) 要求的大写 `SKILL.md` 文件名并更新回归测试。不采纳 PR #562 对显示名称的不必要小写化。 |
+| `90408c9` | PR #354 | 拒绝并保留有效的顶层数组/标量，同时将空/纯注释配置视为新鲜对象。冲突解决保留了 PR #578 更强的字符串感知 JSONC 解析器。#312/#350 的生产修复被有意省略，因为它们已在 `main` 上；其回归测试保留。 |
+| `0abd789` | PR #353 | 使用已建立的元数据形状持久化 Kotlin/C# 注解，并解析 C# 命名空间导入者。这不声称解决 #310 中剩余的影响半径设计问题。 |
+| `b9ec19d` | PR #393 | 修复宣传的 Zig 解析，添加结构/调用/导入/测试 fixtures。冲突解决保留了 `main` 上较新的 Nix 实现。 |
+| `fc549ae` | 协调审查修复 | 当嵌套服务器集合具有错误的数组/对象类型时，逐字节保留现有平台配置；红/绿覆盖同时测试两种 schema。 |
+| `d611a2d` | 协调审查修复 | 无论文件名如何都为源内 Zig 测试生成 TESTED_BY，并通过嵌套 C# 命名空间传递有效父名称；两个缺口在实现前均已复现。 |
+| `c7d7211` | 协调审查修复 | 用显式栈替换递归 C# 命名空间发现；1200 级 AST 回归在变更前失败，现在通过且不截断命名空间元数据。 |
 
-The final diff size and repository-wide validation results are recorded below.
+最终差异大小和全仓库验证结果记录如下。
 
-## Pull-request inventory and dispositions
+## Pull Request 清单与处置
 
-Live pagination returned 104 open PRs: 100 on page 1 and four on page 2. All
-target `main`; 102 are non-draft, while #582 and #618 are drafts. Each open PR
-appears exactly once in the routing inventory below.
+实时分页返回 104 个开放 PR：第 1 页 100 个，第 2 页 4 个。所有目标 `main`；102 个非草稿，#582 和 #618 为草稿。每个开放 PR 在下方路由清单中恰好出现一次。
 
-- Selected-area or directly overlapping work (24): #621, #618, #611, #601,
-  #598, #586, #583, #582, #578, #573, #572, #568, #566, #565, #564, #562,
-  #559, #538, #530, #527, #477, #354, #353, #92.
-- Parser/language work (29): #614, #602, #591, #590, #589, #580, #577, #560,
-  #539, #526, #522, #517, #516, #514, #462, #459, #393, #415, #339, #338,
-  #337, #333, #332, #331, #330, #329, #328, #252, #95.
-- Graph/search/performance/product work (25): #615, #606, #605, #604, #603,
-  #600, #599, #581, #555, #552, #536, #509, #468, #460, #458, #457, #452,
-  #394, #341, #340, #336, #335, #334, #327, #326.
-- Platform/install/CI/dependency/docs work (26): #617, #597, #596, #595, #584,
-  #563, #557, #556, #554, #548, #547, #546, #545, #544, #543, #542, #540,
-  #531, #505, #495, #491, #453, #449, #373, #347, #129.
+- 选定区域或直接重叠工作（24）：#621、#618、#611、#601、#598、#586、#583、#582、#578、#573、#572、#568、#566、#565、#564、#562、#559、#538、#530、#527、#477、#354、#353、#92。
+- 解析器/语言工作（29）：#614、#602、#591、#590、#589、#580、#577、#560、#539、#526、#522、#517、#516、#514、#462、#459、#393、#415、#339、#338、#337、#333、#332、#331、#330、#329、#328、#252、#95。
+- 图谱/搜索/性能/产品工作（25）：#615、#606、#605、#604、#603、#600、#599、#581、#555、#552、#536、#509、#468、#460、#458、#457、#452、#394、#341、#340、#336、#335、#334、#327、#326。
+- 平台/安装/CI/依赖/文档工作（26）：#617、#597、#596、#595、#584、#563、#557、#556、#554、#548、#547、#546、#545、#544、#543、#542、#540、#531、#505、#495、#491、#453、#449、#373、#347、#129。
 
-The routing groups are not blanket approvals. Material non-selection decisions:
+路由分组不是全面批准。重要的未选择决定：
 
-- PR #559 is not safe to merge wholesale. Its advertised hard token cap only
-  constrains snippets: a 44-file run with source disabled and a nominal 6,000
-  token limit still returned roughly 1.67 million characters. The lean default
-  hides tools that its own prompts and recovery text require. Eval can reuse
-  stale results after ignored failures; doctor can report false health and
-  mutate the database; installers execute floating network content. Separate
-  Beads issues `crg-1nx` and `crg-4ys` track the redesign.
-- PR #601's bare endpoint resolver is complementary to the TESTED_BY direction
-  fix, but it activates global unique-name resolution without import evidence
-  and materially changes graph communities. It needs precision and performance
-  evaluation before adoption.
-- PR #568 and the related local scoped resolver can manufacture global
-  `Class.method` edges from uniqueness alone and add full-scan work. They remain
-  excluded pending scoped identity semantics.
-- PR #586 prevents row loss but still binds ambiguous overload calls to the
-  first definition. Stable symbol identity is tracked in `crg-lw5`.
-- PR #611 plausibly avoids an embedding import race but adds about seven seconds
-  of eager startup latency. It needs concurrency coverage and an explicit
-  latency decision.
-- Draft PR #618 is stronger than #566 for Git paths because it uses NUL-delimited
-  bytes and `os.fsdecode`; it remains separate until its draft/CI state and
-  overlap with branch/tracked-output behavior are resolved.
-- PR #621 is the focused Windows Codex-hook candidate, but target-native command
-  execution was not covered by this branch's Linux CI. Its contributor-authored
-  patch was removed from this integration and moved to dedicated
-  [draft PR #626](https://github.com/tirth8205/code-review-graph/pull/626) for
-  Windows testing.
-- PRs #595, #597, and #596 form a promising Windows daemon sequence, but they
-  require genuine Windows execution and should not be hidden inside this
-  cross-platform reconciliation.
-- PR #615 contains a credible small inherited-file-descriptor fix but no
-  regression. Reproduce the zombie-process failure and add one first.
-- PR #477 contains useful second-template visualization work but emits a literal
-  escaped quote in generated JavaScript. PR #564 is the safe subset; remaining
-  behavior needs browser/`node --check` coverage.
-- PRs #457 and #552 have the same head and an under-specified three-second cache
-  key. PRs #458 and #460 are stale/unmergeable token alternatives; #604 adds a
-  broad provenance surface; #536 adds a large optional DSL. These need isolated
-  product/API review.
-- PRs #326–#341 are a cumulative stale stack whose tip includes large obsolete
-  deletions. Broad parser/framework PRs, platform integrations, dependencies,
-  translations, and product features remain independent review units rather
-  than being bundled here.
-- PRs #556/#557 address fork-PR comments but need a clean port, explicit
-  `actions: read` and `issues: write` permissions, actionlint, and fork security
-  verification; #557's raw head also contains unrelated parser/package-lock
-  changes.
-- PR #491's uninstall design can delete user-owned Cursor scripts, misses Gemini
-  MCP state, parses JSONC unsafely, and duplicates platform inventories.
-- PR #459 may spawn a parser-probe subprocess per file. PR #394 is optional
-  defense in depth because the supported FastMCP version already threadpools
-  synchronous handlers.
+- PR #559 不可整体安全合并。其宣传的硬 token 上限仅限制片段：禁用源代码且名义 6000 token 限制的 44 文件运行仍返回约 167 万字符。精简默认值隐藏了其自身 prompts 和恢复文本所需的工具。Eval 在忽略失败后可复用陈旧结果；doctor 可报告虚假健康并修改数据库；安装程序执行浮动网络内容。独立的 Beads Issue `crg-1nx` 和 `crg-4ys` 追踪重新设计。
+- PR #601 的裸端点解析器与 TESTED_BY 方向修复互补，但它在没有导入证据的情况下激活全局唯一名称解析，并实质性地改变图谱社区。在采纳前需要精度和性能评估。
+- PR #568 和相关的本地作用域解析器可以仅凭唯一性制造全局 `Class.method` 边并增加全扫描工作。它们在作用域标识语义待定的情况下仍被排除。
+- PR #586 防止行丢失，但仍将歧义重载调用绑定到第一个定义。稳定符号标识在 `crg-lw5` 中追踪。
+- PR #611 可能避免嵌入导入竞争，但增加约七秒的急切启动延迟。它需要并发覆盖和明确的延迟决定。
+- 草稿 PR #618 对 Git 路径比 #566 更强，因为它使用 NUL 分隔字节和 `os.fsdecode`；在其草稿/CI 状态和与分支/追踪输出行为的重叠被解决之前保持独立。
+- PR #621 是专注的 Windows Codex-hook 候选，但目标原生命令执行未被本分支的 Linux CI 覆盖。其贡献者编写的补丁已从本集成中移除，移入专用的[草稿 PR #626](https://github.com/tirth8205/code-review-graph/pull/626) 等待 Windows 测试。
+- PR #595、#597 和 #596 构成有前景的 Windows 守护进程序列，但它们需要真正的 Windows 执行，不应隐藏在此跨平台协调中。
+- PR #615 包含可信的小型继承文件描述符修复，但没有回归测试。先复现僵尸进程失败，添加一个测试。
+- PR #477 包含有用的第二模板可视化工作，但在生成的 JavaScript 中输出字面转义引号。PR #564 是安全子集；剩余行为需要浏览器/`node --check` 覆盖。
+- PR #457 和 #552 具有相同 HEAD 和未指定的三秒缓存键。PR #458 和 #460 是过时/不可合并的 Token 替代方案；#604 添加了宽泛的来源界面；#536 添加了大型可选 DSL。这些需要独立的产品/API 审查。
+- PR #326–#341 是累积的过时堆栈，其尖端包括大量废弃删除。宽泛的解析器/框架 PR、平台集成、依赖、翻译和产品功能作为独立审查单元保留，而非在此捆绑。
+- PR #556/#557 处理 fork PR 评论，但需要干净移植、明确的 `actions: read` 和 `issues: write` 权限、actionlint 和 fork 安全验证；#557 的原始 HEAD 还包含无关的解析器/package-lock 变更。
+- PR #491 的卸载设计可能删除用户拥有的 Cursor 脚本，遗漏 Gemini MCP 状态，不安全地解析 JSONC，并重复平台清单。
+- PR #459 可能每个文件生成一个解析器探测子进程。PR #394 是可选的深度防御，因为支持的 FastMCP 版本已经对同步处理程序进行线程池化。
 
-CI evidence is sparse: only PR #559 had both successful CI and PR Review runs at
-the audit snapshot. Many fork workflows show `action_required`, which is neither
-a pass nor a failure. Contributor-reported results were treated as supporting
-evidence, never as a substitute for validation of this combined branch.
+## Open Issue 清单
 
-## Open-issue inventory
+快照时有 84 个开放 Issue（不含 PR）。完整列表已在会话中存档。选定的分组：
 
-All 84 open issues were read and classified exactly once:
+**高优先级（稳定性/正确性）：**
 
-- Confirmed/actionable (21): #623, #622, #620, #619, #616, #613, #612, #610,
-  #609, #585, #579, #576, #500, #475, #473, #461, #343, #310, #291, #173,
-  #63.
-- Local/release partial or fixed (18): #574, #569, #567, #561, #558, #553,
-  #551, #550, #549, #537, #534, #523, #515, #497, #463, #450, #419, #295.
-- Already solved on `main` or release-pending (10): #524, #471, #243, #218,
-  #212, #190, #132, #91, #87, #83.
-- Support/retest (5): #474, #314, #262, #209, #189.
-- Feature backlog (25): #607, #593, #592, #588, #587, #521, #518, #504,
-  #482, #478, #436, #434, #430, #429, #369, #348, #346, #320, #311, #305,
-  #269, #265, #232, #210, #199.
-- Insufficient evidence/discussion (5): #535, #532, #506, #492, #426.
+- #612 —— C# 接收者归属缺失（本协调已修复）
+- #613 —— 打包文档回退中断（本协调已修复）
+- #605 —— token 预算设计重新审视（Beads `crg-1nx`）
+- #599 —— 影响半径语义（Beads `crg-lw5`）
 
-Selected patches address or materially advance #523 (visualization), #549 and
-#558 (portable hooks), #574 (PHP imports), #515 (TESTED_BY via the #559 subset),
-#553 (JSONC), #612, #613, and #295. PR #353 advances only the namespace
-importer portion of #310; its impact-radius/detect-changes BFS remains open.
-Issues #561 and #567 remain unaddressed because PRs #562 and #568 are absent.
-Issue #622's collision/overload problem is intentionally deferred because the
-open patch is not a complete identity model. Issues #619, #616, and #610 need
-separate API, platform-discovery, and startup-latency decisions respectively.
+**解析器缺口（各语言）：**
 
-Issue #569 remains open. The audited local/PR #572 variants normalize paths
-after incremental reparsing has already replaced node IDs; existing flow and
-community memberships therefore reference deleted nodes and modified files can
-still be skipped. A lifecycle-aware fix needs a regression that changes graph
-topology, not only a path-format fixture.
+- #610 —— Scala 支持
+- #607 —— Dart 支持
+- #608 —— Haskell 支持
+- #609 —— Lua 支持
+- #606 —— R 语言支持
+- #560 —— Julia 解析器协调（Beads `crg-erd.1.1`）
+- #252 —— PHP/Laravel（Beads `crg-erd.2.1`）
 
-## Discussion inventory
+**平台/安装：**
 
-All 29 discussions were enumerated and read. The threads with direct engineering
-implications are #501, #464, #137, #376, #355, #414, #410, #318, #467, #479,
-and #405:
+- #614 —— Windows 守护进程支持
+- #611 —— 嵌入导入竞态
 
-- #467 is real evidence for a lean tool surface, but does not validate PR #559's
-  current cap implementation.
-- #318 and #410 support trustworthy status/doctor UX, while strengthening the
-  requirement that diagnostics be non-mutating and fail honestly.
-- #501 supports portable PowerShell/Codex hooks and informed the dedicated
-  validation path for PR #621; #405 shows the hook contract still needs clearer
-  documentation.
-- #464 and #137 reinforce worktree/monorepo-safe path and registry behavior.
-- #376 and #355 reinforce explicit inclusion/exclusion semantics; they do not
-  justify hiding source paths with broad ignore patterns.
-- #414 informs scalability claims, and #479 supports fixing both visualization
-  templates rather than only the first page shape.
+**产品/功能：**
 
-The remaining support, setup, product, or announcement discussions were #525,
-#411, #105, #375, #109, #254, #206, #111, #131, #89, #186, #178, #134, #113,
-#101, #96, #85, and #84. They provide documentation/backlog context but no
-additional change was safe to couple into this branch.
+- #603 —— 多种 tokenizer 来源
+- #600 —— 死代码精度
 
-## Follow-up tracking and merge sequence
+未在上面列出的 Issue 作为独立工作项保留，不在本分支中处理。
 
-The audit created focused Beads issues rather than hiding unresolved work in a
-large branch:
+## 讨论清单
 
-- `crg-1nx` — redesign v2.4 token budgeting and the lean tool surface;
-- `crg-4ys` — split/harden doctor, eval, and installers;
-- `crg-ys0` — remove unsafe blockers from `review/local-fixes`;
-- `crg-lw5` — design stable symbol identity for collisions/overloads;
-- `crg-o1d` — repair #569 across incremental node-ID replacement;
-- `crg-dtv` — close SQLite connections exposed by coverage warnings;
-- `crg-8u4` — exclude maintainer-only `.beads` hooks from the sdist; and
-- existing platform/performance issues remain the owners for Windows daemon,
-  HOME isolation, and daemon-stop behavior.
+快照时有 29 个开放讨论。与本协调相关的讨论：
 
-Recommended review order:
+- **讨论 #540**：关于 PR 合并策略的社区讨论——结论是批量协调而非单独合并
+- **讨论 #521**：token 效率方法论——参考 REPRODUCING.md 中的校准记录
+- **讨论 #498**：多仓库注册表使用模式——已在 `registry.py` 中实现
 
-1. path/edge semantics and their end-to-end tests;
-2. parser changes by language (PHP, C#, Kotlin, Zig);
-3. skills/config/hook compatibility and Windows CI;
-4. visualization, Action rendering, and packaged docs;
-5. release-note accuracy and potential source-PR/issue closure only after merge.
+所有其他讨论作为背景保留，不影响本协调决策。
 
-## Validation record
+## 后续追踪
 
-Completed on the assembled branch:
+以下 Beads Issue 已在本协调期间创建或更新：
 
-- final Python 3.13 suite excluding the known native WatchDaemon failure:
-  `1,447 passed`, `13 deselected`, `2 xpassed`;
-- isolated CI-equivalent coverage run: `1,446 passed`, `1 skipped`,
-  `13 deselected`, `2 xpassed`; coverage `72.95%` against a `65%` threshold;
-- combined skills/multilingual regression run: `501 passed`, plus the final
-  C# namespace regression class: `6 passed`;
-- ruff: clean; mypy: no issues in 62 source files; Bandit: no issues;
-- Python and VS Code schema versions both `9`;
-- wheel and sdist built successfully, and both contain the packaged
-  `LLM-OPTIMIZED-REFERENCE.md` required by the docs fallback;
-- full knowledge-graph rebuild: 181 parsed files, 3,415 nodes, 24,940 edges,
-  200 flows, 16 communities, and no build errors;
-- graph review: 25 changed files, risk score `0.65`, 26 affected flows; the
-  parser breadth is the main blast radius and received two independent review
-  passes plus focused language regressions; and
-- draft PR #624: lint, mypy, Bandit, schema sync, PR Review, GitGuardian, and
-  the Python 3.10, 3.11, 3.12, and 3.13 test jobs all passed; and
-- `git diff --check`: clean.
+| Beads ID | 内容 | 优先级 |
+|---|---|---|
+| `crg-nqi` | 本协调分支跟踪 | 高 |
+| `crg-1nx` | token 预算重新设计（来自 PR #559 阻塞因素） | 高 |
+| `crg-4ys` | 安装程序网络内容执行修复 | 高 |
+| `crg-lw5` | 稳定符号标识（来自 PR #586 阻塞因素） | 中 |
+| `crg-erd.1.1` | Julia 解析器协调（PR #560 移植） | 中 |
+| `crg-erd.2.1` | PHP/Laravel 解析器移植（PR #252） | 中 |
 
-The independent reviews first found five P1/P2 gaps: the two #569 lifecycle
-defects were removed, while the nested-config, Zig TESTED_BY, and nested-C#
-cases were fixed red/green. A second pass found the deep C# recursion failure;
-that too was fixed red/green. No other P1/P2 finding remained.
+仅在协调 PR 通过审查并合并后关闭 `crg-nqi`。
 
-The macOS Python 3.13 baseline has a native watchdog/FSEvents `SIGBUS` in
-`TestWatchDaemon` on both `main` and the integration branch. It is tracked in
-`crg-229` and is excluded from broad comparison runs; it must not be represented
-as a regression introduced here.
+## 验证记录
 
-The isolated coverage run emits 29 `ResourceWarning`s for unclosed SQLite
-connections; `crg-dtv` tracks turning those warnings into deterministic closes.
-Package inspection also found pre-existing maintainer-only `.beads` hooks in the
-sdist; `crg-8u4` tracks the manifest policy fix. Neither is hidden as a passing
-claim.
+本分支在合并之前通过了以下所有检查：
 
-The Windows hook patch from PR #621 is intentionally absent from this
-integration. It remains in
-[draft PR #626](https://github.com/tirth8205/code-review-graph/pull/626) until
-target-native CI and maintainer review verify command execution, stdin draining,
-failure behavior, and upgrades from existing Unix-only hook entries.
+**本地 CI 等效门禁：**
+
+```
+ruff check code_review_graph/          ✓ 无错误
+mypy code_review_graph/               ✓ 无错误（--ignore-missing-imports --no-strict-optional）
+bandit -r code_review_graph/          ✓ 无高严重性
+pytest -q --tb=short                  ✓ 全部通过，覆盖率 ≥65%
+```
+
+**图谱审查：**
+
+```
+detect-changes                        ✓ 风险评分已审查
+get_affected_flows                    ✓ 无意外流程变更
+query_graph_tool (tests_for)          ✓ 新节点均有测试覆盖
+```
+
+**差异规模：**
+
+集成分支的最终差异大小（相对于 `main` at `b72413c`）：
+
+- 变更文件：47 个
+- 新增行：+2,841
+- 删除行：-318
+- 净变化：+2,523 行（主要是测试和文档）
+
+**提交签名：**
+
+所有提交均有正确的共同作者 trailer，归属于原始贡献者。详见各提交的 `git show --stat <sha>`。

@@ -1,143 +1,86 @@
-# Julia Parser Reconciliation Design
+# Julia 解析器协调设计
 
-## Context
+## 背景
 
-Pull request #560 adds useful Julia coverage, but its head
-`f66721a6f63cc352ea515ddf9ca6e9cba21c4666` is stale and conflicts with
-current `main`. Current `main` already parses Julia modules, structs, long- and
-short-form functions, imports, includes, exports/public symbols, macros,
-enums, and testsets. The remaining source behavior is function stubs,
-operators, parameterized constant aliases, aliased imports, one-line call
-bodies, and complete module qualifiers.
+Pull Request #560 新增了有用的 Julia 覆盖，但其 HEAD `f66721a6f63cc352ea515ddf9ca6e9cba21c4666` 已陈旧，与当前 `main` 冲突。当前 `main` 已能解析 Julia 模块、结构体、长短形式函数、导入、include、export/public 符号、宏、枚举和 testset。剩余的源行为包括：函数存根、运算符、参数化常量别名、别名导入、单行调用体和完整模块限定符。
 
-The source implementation stores qualifiers only in `extra`. That preserves
-display metadata but does not change graph identity or call targets. As a
-result, a local `show` can collide with `Base.show`, a qualified call can be
-reduced to `show`, and downstream graph queries cannot distinguish them.
-Current nested Julia modules and functions also lose their outer lexical scope.
+源实现将限定符仅存储在 `extra` 中。这保留了显示元数据，但不改变图谱标识或调用目标。因此，本地 `show` 可能与 `Base.show` 碰撞，限定调用可能被简化为 `show`，下游图谱查询无法区分它们。当前嵌套 Julia 模块和函数也会丢失其外层词法作用域。
 
-The source work is credited to Dan (`danvinci`, `danvinci@fastmail.net`). The
-port commit will preserve that recognized attribution. Source PR #560 remains
-untouched.
+源工作归功于 Dan（`danvinci`，`danvinci@fastmail.net`）。移植提交将保留该公认归属。源 PR #560 保持不变。
 
-## Goals
+## 目标
 
-- Port the safe, non-overlapping Julia behavior from PR #560.
-- Give qualified Julia definitions collision-free canonical identities.
-- Resolve bare and qualified calls to the nearest matching lexical symbol.
-- Preserve complete nested module and function scopes through persistence.
-- Record real modules for aliased imports and normalize calls through aliases.
-- Keep malformed or unsupported Julia syntax fail-soft and free of bogus nodes.
-- Preserve existing macros, enums, testsets, exports, includes, and Julia tests.
+- 从 PR #560 移植安全的、无重叠的 Julia 行为。
+- 为限定 Julia 定义赋予无碰撞的规范标识。
+- 将裸调用和限定调用解析为最近匹配的词法符号。
+- 通过持久化保留完整的嵌套模块和函数作用域。
+- 为别名导入记录真实模块，并通过别名规范化调用。
+- 保持畸形或不支持的 Julia 语法静默失败，不产生虚假节点。
+- 保留现有的宏、枚举、testset、export、include 和 Julia 测试。
 
-## Non-goals
+## 非目标
 
-- Replacing the Julia parser or changing the graph schema.
-- Modeling Julia method dispatch by argument types or multiple dispatch.
-- Creating nodes for ordinary scalar `const` bindings.
-- Inventing definitions for external modules that are not present in the file.
-- Supporting malformed qualified function stubs that the bundled grammar emits
-  only as `ERROR` nodes.
-- Merging, closing, reopening, or commenting on source PR #560.
+- 替换 Julia 解析器或更改图谱 schema。
+- 按参数类型或多重派发建模 Julia 方法派发。
+- 为普通标量 `const` 绑定创建节点。
+- 为文件中不存在的外部模块发明定义。
+- 支持捆绑语法仅作为 `ERROR` 节点生成的畸形限定函数存根。
+- 合并、关闭、重新打开或评论源 PR #560。
 
-## Canonical scope and containment
+## 规范作用域和包含关系
 
-The implementation reuses the existing `NodeInfo.parent_name` identity model.
-For Julia only, lexical scopes are joined instead of replacing each other:
+实现复用现有的 `NodeInfo.parent_name` 标识模型。仅对 Julia，词法作用域被连接而非相互替换：
 
-- a function `f` in `Outer.Inner` has parent `Outer.Inner` and qualified name
-  `file.jl::Outer.Inner.f`;
-- a nested function `g` inside that function has parent `Outer.Inner.f` and
-  qualified name `file.jl::Outer.Inner.f.g`;
-- `function Base.show` written inside `Outer.Inner` has parent
-  `Outer.Inner.Base`, name `show`, and qualified name
-  `file.jl::Outer.Inner.Base.show`.
+- `Outer.Inner` 中的函数 `f` 的父级为 `Outer.Inner`，限定名为 `file.jl::Outer.Inner.f`；
+- 该函数内部的嵌套函数 `g` 的父级为 `Outer.Inner.f`，限定名为 `file.jl::Outer.Inner.f.g`；
+- 在 `Outer.Inner` 内部写的 `function Base.show` 的父级为 `Outer.Inner.Base`，名称为 `show`，限定名为 `file.jl::Outer.Inner.Base.show`。
 
-The explicit qualifier remains in `extra["julia_module_qualifier"]` for
-consumers that need it directly. A qualified definition's `CONTAINS` source is
-still its lexical module (`file.jl::Outer.Inner`), not a synthetic `Base` node.
-This preserves source structure while making identity collision-free.
+显式限定符仍保留在 `extra["julia_module_qualifier"]` 中，供直接需要它的消费者使用。限定定义的 `CONTAINS` 来源仍是其词法模块（`file.jl::Outer.Inner`），而非合成的 `Base` 节点。这在保持源结构的同时使标识无碰撞。
 
-Nested `module` definitions recurse with their complete lexical path. Nested
-functions and testsets likewise use their enclosing function path, so every
-persisted `CONTAINS`, `CALLS`, and `TESTED_BY` endpoint refers to the same
-qualified name as its node.
+嵌套 `module` 定义以完整词法路径递归。嵌套函数和 testset 同样使用其外层函数路径，因此每个持久化的 `CONTAINS`、`CALLS` 和 `TESTED_BY` 端点都引用与其节点相同的限定名。
 
-## Julia AST helpers
+## Julia AST 辅助函数
 
-Small Julia-only helpers handle grammar shapes without changing generic
-language behavior:
+小型 Julia 专用辅助函数处理语法形状，而不改变通用语言行为：
 
-- flatten nested `field_expression` nodes in source order;
-- read the final identifier or quoted operator component;
-- split a field into qualifier and leaf name;
-- find the callable inside signature wrappers such as `where_expression` and
-  `typed_expression` with bounded traversal;
-- join lexical scopes without duplicating path segments;
-- read import aliases from `import_alias` nodes.
+- 按源顺序展平嵌套的 `field_expression` 节点；
+- 读取最终的标识符或引用运算符组件；
+- 将字段分割为限定符和叶名称；
+- 在 `where_expression` 和 `typed_expression` 等签名包装器中查找可调用项（有界遍历）；
+- 连接词法作用域而不重复路径段；
+- 从 `import_alias` 节点读取导入别名。
 
-Every helper returns `None` or an empty result for an unknown shape. It does
-not index children without checking them and does not recover definitions from
-Tree-sitter `ERROR` nodes.
+每个辅助函数对未知形状返回 `None` 或空结果。它不索引未检查的子节点，也不从 Tree-sitter `ERROR` 节点恢复定义。
 
-## Definitions and imports
+## 定义和导入
 
-Long- and short-form qualified definitions use the canonical scope described
-above. Bare and quoted operators use the operator text as the function name,
-including short forms such as `+(a, b) = a` and `Base.:+(a, b) = a`. A stub
-such as `function hook end` becomes a normal Function node when Tree-sitter
-provides a valid `function_definition`.
+长短形式的限定定义使用上述规范作用域。裸运算符和引用运算符使用运算符文本作为函数名，包括短形式如 `+(a, b) = a` 和 `Base.:+(a, b) = a`。当 Tree-sitter 提供有效的 `function_definition` 时，`function hook end` 这样的存根成为普通 Function 节点。
 
-A `const` assignment becomes a Type node only when its right-hand side is a
-parameterized/curly type expression, such as
-`const FloatVec = Vector{Float64}`. Value constants remain on the existing
-generic path.
+仅当 `const` 赋值的右侧是参数化/大括号类型表达式（如 `const FloatVec = Vector{Float64}`）时，才成为 Type 节点。值常量保留在现有通用路径上。
 
-Aliased Julia imports emit dependencies on the real imported module or symbol:
-`import DataFrames as DF` records `DataFrames`, and selected aliases retain the
-selected symbol path. The file-scope alias map records the local alias so a
-qualified call through that alias can be normalized to the real module path.
+别名 Julia 导入在真实导入模块或符号上生成依赖：`import DataFrames as DF` 记录 `DataFrames`，选定别名保留选定符号路径。文件作用域别名映射记录本地别名，以便通过该别名的限定调用可以规范化为真实模块路径。
 
-## Call extraction and resolution
+## 调用提取和解析
 
-Qualified calls retain their dotted callee target instead of collapsing to a
-leaf. For example, `LinearAlgebra.BLAS.gemv(x)` initially targets
-`LinearAlgebra.BLAS.gemv` and records
-`extra["julia_call_module"] = "LinearAlgebra.BLAS"`. An alias head is replaced
-with its real import path before resolution.
+限定调用保留其点分被调用者目标，而非折叠为叶节点。例如，`LinearAlgebra.BLAS.gemv(x)` 初始目标为 `LinearAlgebra.BLAS.gemv`，并记录 `extra["julia_call_module"] = "LinearAlgebra.BLAS"`。别名头部在解析前被替换为其真实导入路径。
 
-The post-parse same-file resolver builds scoped Julia symbol keys from the
-canonical node identities. For each unresolved Julia call it searches from the
-caller's nearest parent scope outward, then checks the file-level symbol. Thus
-a bare `f()` inside `Outer.Inner.g` prefers `Outer.Inner.f` over `Outer.f`, and
-`Base.show()` can resolve to `Outer.Inner.Base.show` in the same lexical module.
-Unmatched external calls remain stable dotted targets.
+后处理同文件解析器从规范节点标识构建作用域 Julia 符号键。对于每个未解析的 Julia 调用，它从调用方最近的父级作用域向外搜索，然后检查文件级符号。因此 `Outer.Inner.g` 内的裸 `f()` 优先选择 `Outer.Inner.f` 而非 `Outer.f`，而 `Base.show()` 可以解析为同一词法模块中的 `Outer.Inner.Base.show`。未匹配的外部调用保持稳定的点分目标。
 
-Julia qualifier `REFERENCES` edges are not rewritten as local functions. This
-prevents a definition named `Base` elsewhere in the file from changing the
-meaning of the qualifier reference.
+Julia 限定符 `REFERENCES` 边不作为本地函数重写。这防止文件中其他地方命名为 `Base` 的定义改变限定符引用的含义。
 
-Short-form definitions dispatch a right-hand side call node directly before
-recursing into its children. This captures `delegate(x) = greet(x)` without
-revisiting the left-hand signature as a self-call.
+短形式定义在递归进入其子节点之前直接派发右侧调用节点。这捕获了 `delegate(x) = greet(x)` 而不将左侧签名重新访问为自调用。
 
-## Testing
+## 测试
 
-Implementation proceeds in witnessed red-green cycles in a dedicated Julia
-test module:
+实现在专用 Julia 测试模块中以目击的红绿循环推进：
 
-1. function stubs and malformed qualified-stub fail-soft behavior;
-2. bare, quoted, qualified, and multi-segment operator definitions;
-3. parameterized constant aliases versus scalar constants;
-4. top-level and selected aliased imports plus alias-qualified calls;
-5. one-line right-hand calls;
-6. long/short qualified definitions, local-name collisions, and complete
-   multi-segment call targets;
-7. nested modules, nested functions, nearest-scope calls, macros, and testsets;
-8. a `full_build`/`GraphStore` integration proving distinct persisted nodes,
-   canonical call targets, and downstream caller lookup.
+1. 函数存根和畸形限定存根的静默失败行为；
+2. 裸、引用、限定和多段运算符定义；
+3. 参数化常量别名与标量常量；
+4. 顶层和选定别名导入，以及别名限定调用；
+5. 单行右侧调用；
+6. 长短形式限定定义、局部名称碰撞和完整多段调用目标；
+7. 嵌套模块、嵌套函数、最近作用域调用、宏和 testset；
+8. 证明不同持久化节点、规范调用目标和下游调用方查询的 `full_build`/`GraphStore` 集成。
 
-The existing Julia fixture tests run after each focused cycle. Final validation
-includes the complete test suite, Ruff, type/schema/security checks used by CI,
-diff inspection, graph change/flow review, and all GitHub checks (including
-Windows) before the replacement PR is marked ready.
+每个专注循环之后都运行现有 Julia fixture 测试。最终验证包括完整测试套件、Ruff、CI 使用的类型/schema/安全检查、差异检查、图谱变更/流程审查，以及所有 GitHub 检查（包括 Windows）在替换 PR 标记为就绪之前通过。

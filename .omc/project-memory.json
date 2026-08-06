@@ -1,0 +1,402 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1785998909984,
+  "projectRoot": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+  "techStack": {
+    "languages": [
+      {
+        "name": "Python",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "pyproject.toml"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "pytest",
+        "version": null,
+        "category": "testing"
+      }
+    ],
+    "packageManager": null,
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": "pytest",
+    "lintCommand": "ruff check",
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "docs",
+      "scripts",
+      "tests"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "code-review-graph-vscode": {
+      "path": "code-review-graph-vscode",
+      "purpose": null,
+      "fileCount": 9,
+      "lastAccessed": 1785998909956,
+      "keyFiles": [
+        "CHANGELOG.md",
+        "esbuild.mjs",
+        "LICENSE",
+        "package-lock.json",
+        "package.json"
+      ]
+    },
+    "code_review_graph": {
+      "path": "code_review_graph",
+      "purpose": null,
+      "fileCount": 45,
+      "lastAccessed": 1785998909956,
+      "keyFiles": [
+        "analysis.py",
+        "changes.py",
+        "cli.py",
+        "communities.py",
+        "config_keys.py"
+      ]
+    },
+    "diagrams": {
+      "path": "diagrams",
+      "purpose": null,
+      "fileCount": 12,
+      "lastAccessed": 1785998909957,
+      "keyFiles": [
+        "context-savings-demo.gif",
+        "context-savings-demo.tape",
+        "diagram1_before_vs_after.png",
+        "diagram2_architecture_pipeline.png",
+        "diagram3_blast_radius.png"
+      ]
+    },
+    "docs": {
+      "path": "docs",
+      "purpose": "Documentation",
+      "fileCount": 14,
+      "lastAccessed": 1785998909957,
+      "keyFiles": [
+        "architecture.md",
+        "COMMANDS.md",
+        "CUSTOM_LANGUAGES.md",
+        "FAQ.md",
+        "FEATURES.md"
+      ]
+    },
+    "evaluate": {
+      "path": "evaluate",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1785998909957,
+      "keyFiles": []
+    },
+    "hooks": {
+      "path": "hooks",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1785998909957,
+      "keyFiles": [
+        "hooks.json",
+        "session-start.sh"
+      ]
+    },
+    "scripts": {
+      "path": "scripts",
+      "purpose": "Build/utility scripts",
+      "fileCount": 2,
+      "lastAccessed": 1785998909957,
+      "keyFiles": [
+        "diagnose_pypi_connectivity.py",
+        "render_pr_comment.py"
+      ]
+    },
+    "skills": {
+      "path": "skills",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1785998909958,
+      "keyFiles": []
+    },
+    "tests": {
+      "path": "tests",
+      "purpose": "Test files",
+      "fileCount": 76,
+      "lastAccessed": 1785998909958,
+      "keyFiles": [
+        "conftest.py",
+        "test_action_render.py",
+        "test_agent_transparency.py",
+        "test_ansible_parser.py",
+        "test_changes.py"
+      ]
+    },
+    "code-review-graph-vscode\\src": {
+      "path": "code-review-graph-vscode\\src",
+      "purpose": "Source code",
+      "fileCount": 1,
+      "lastAccessed": 1785998909958,
+      "keyFiles": [
+        "extension.ts"
+      ]
+    },
+    "code_review_graph\\assets": {
+      "path": "code_review_graph\\assets",
+      "purpose": "Static assets",
+      "fileCount": 1,
+      "lastAccessed": 1785998909959,
+      "keyFiles": [
+        "d3.v7.min.js"
+      ]
+    },
+    "tests\\fixtures": {
+      "path": "tests\\fixtures",
+      "purpose": "Test fixtures",
+      "fileCount": 60,
+      "lastAccessed": 1785998909960,
+      "keyFiles": [
+        "alias_importer.ts",
+        "caller_example.py",
+        "detect_changes_sample.json"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "pyproject.toml",
+      "accessCount": 6,
+      "lastAccessed": 1786016208610,
+      "type": "directory"
+    },
+    {
+      "path": "docs/FEATURES.md",
+      "accessCount": 6,
+      "lastAccessed": 1786019507587,
+      "type": "file"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-07-17-julia-parser-reconciliation.md",
+      "accessCount": 6,
+      "lastAccessed": 1786020169554,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 5,
+      "lastAccessed": 1786016198106,
+      "type": "file"
+    },
+    {
+      "path": "docs/REPRODUCING.md",
+      "accessCount": 5,
+      "lastAccessed": 1786020009682,
+      "type": "file"
+    },
+    {
+      "path": "docs/MAINTAINER_RECONCILIATION_2026-07-17.md",
+      "accessCount": 5,
+      "lastAccessed": 1786020037424,
+      "type": "file"
+    },
+    {
+      "path": "docs/schema.md",
+      "accessCount": 4,
+      "lastAccessed": 1786018830722,
+      "type": "file"
+    },
+    {
+      "path": "docs/GITHUB_ACTION.md",
+      "accessCount": 4,
+      "lastAccessed": 1786019073079,
+      "type": "file"
+    },
+    {
+      "path": "docs/FAQ.md",
+      "accessCount": 4,
+      "lastAccessed": 1786019294752,
+      "type": "file"
+    },
+    {
+      "path": "docs/COMMANDS.md",
+      "accessCount": 4,
+      "lastAccessed": 1786019438212,
+      "type": "file"
+    },
+    {
+      "path": "code_review_graph/skills.py",
+      "accessCount": 3,
+      "lastAccessed": 1786016990390,
+      "type": "directory"
+    },
+    {
+      "path": "docs/USAGE.md",
+      "accessCount": 3,
+      "lastAccessed": 1786018802484,
+      "type": "file"
+    },
+    {
+      "path": "docs/CUSTOM_LANGUAGES.md",
+      "accessCount": 3,
+      "lastAccessed": 1786019051193,
+      "type": "file"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-07-17-php-laravel-parser-design.md",
+      "accessCount": 3,
+      "lastAccessed": 1786019640302,
+      "type": "file"
+    },
+    {
+      "path": "docs/superpowers/specs/2026-07-17-julia-parser-reconciliation-design.md",
+      "accessCount": 3,
+      "lastAccessed": 1786019696768,
+      "type": "file"
+    },
+    {
+      "path": "docs/superpowers/plans/2026-07-17-php-laravel-parser.md",
+      "accessCount": 3,
+      "lastAccessed": 1786019880502,
+      "type": "file"
+    },
+    {
+      "path": "GEMINI.md",
+      "accessCount": 2,
+      "lastAccessed": 1786001027440,
+      "type": "file"
+    },
+    {
+      "path": "AGENTS.md",
+      "accessCount": 2,
+      "lastAccessed": 1786001046077,
+      "type": "file"
+    },
+    {
+      "path": "code_review_graph/docs/LLM-OPTIMIZED-REFERENCE.md",
+      "accessCount": 2,
+      "lastAccessed": 1786015571168,
+      "type": "file"
+    },
+    {
+      "path": "skills/debug-issue/SKILL.md",
+      "accessCount": 2,
+      "lastAccessed": 1786016731639,
+      "type": "file"
+    },
+    {
+      "path": "skills/explore-codebase/SKILL.md",
+      "accessCount": 2,
+      "lastAccessed": 1786016732207,
+      "type": "file"
+    },
+    {
+      "path": "skills/refactor-safely/SKILL.md",
+      "accessCount": 2,
+      "lastAccessed": 1786016732775,
+      "type": "file"
+    },
+    {
+      "path": "skills/review-changes/SKILL.md",
+      "accessCount": 2,
+      "lastAccessed": 1786016733339,
+      "type": "file"
+    },
+    {
+      "path": "skills/review-delta/SKILL.md",
+      "accessCount": 2,
+      "lastAccessed": 1786016733908,
+      "type": "file"
+    },
+    {
+      "path": "skills/review-pr/SKILL.md",
+      "accessCount": 2,
+      "lastAccessed": 1786016734473,
+      "type": "file"
+    },
+    {
+      "path": "docs/INDEX.md",
+      "accessCount": 2,
+      "lastAccessed": 1786018613364,
+      "type": "file"
+    },
+    {
+      "path": "docs/LEGAL.md",
+      "accessCount": 2,
+      "lastAccessed": 1786018621980,
+      "type": "file"
+    },
+    {
+      "path": "docs/architecture.md",
+      "accessCount": 2,
+      "lastAccessed": 1786018666589,
+      "type": "file"
+    },
+    {
+      "path": "docs/TROUBLESHOOTING.md",
+      "accessCount": 2,
+      "lastAccessed": 1786018895455,
+      "type": "file"
+    },
+    {
+      "path": "diagrams/generate_diagrams.py",
+      "accessCount": 1,
+      "lastAccessed": 1785999772476,
+      "type": "file"
+    },
+    {
+      "path": "使用手册.md",
+      "accessCount": 1,
+      "lastAccessed": 1786000179587,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 1,
+      "lastAccessed": 1786001015417,
+      "type": "file"
+    },
+    {
+      "path": "code_review_graph/cli.py",
+      "accessCount": 1,
+      "lastAccessed": 1786015742234,
+      "type": "directory"
+    },
+    {
+      "path": "code_review_graph/main.py",
+      "accessCount": 1,
+      "lastAccessed": 1786015742239,
+      "type": "directory"
+    },
+    {
+      "path": "tests/test_eval.py",
+      "accessCount": 1,
+      "lastAccessed": 1786015745988,
+      "type": "directory"
+    },
+    {
+      "path": "code_review_graph/tools/docs.py",
+      "accessCount": 1,
+      "lastAccessed": 1786015842192,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

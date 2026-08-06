@@ -1,139 +1,91 @@
-# PHP and Laravel Parser Port Design
+# PHP 与 Laravel 解析器移植设计
 
-## Context
+## 背景
 
-Pull request #252 contains useful PHP, Composer, Blade, and Laravel parsing
-work, but its branch predates stronger PHP call and `use` handling that is
-already on `main`. This port takes only the remaining behavior and preserves
-the current generic parser path.
+Pull Request #252 包含有用的 PHP、Composer、Blade 和 Laravel 解析工作，但其分支早于 `main` 上已有的更强 PHP 调用和 `use` 处理。本次移植仅采纳剩余行为，并保留当前通用解析器路径。
 
-The source implementation is credited to Minidoracat
-(`minidora0702@gmail.com`). The port commit will retain that attribution.
+源实现归功于 Minidoracat（`minidora0702@gmail.com`）。移植提交将保留该归属。
 
-## Goals
+## 目标
 
-- Recognize PHP traits, enums, object creation, and inheritance/interface
-  clauses without changing existing PHP call or import formatting.
-- Treat PHP `boot`, `register`, and `__invoke` methods as language-scoped
-  entry points. Existing universal `handle`, `up`, and `down` behavior
-  remains unchanged.
-- Resolve PHP namespaces through Composer PSR-4 mappings safely and
-  deterministically.
-- Parse Blade template references while ignoring Blade comments and escaped
-  directives.
-- Add Laravel Route-to-controller and Eloquent relationship edges only when
-  the AST contains explicit framework and receiver evidence.
-- Keep serial and process-pool builds behaviorally equivalent.
+- 识别 PHP trait、枚举、对象创建和继承/接口子句，而不改变现有 PHP 调用或导入格式化。
+- 将 PHP 的 `boot`、`register` 和 `__invoke` 方法视为语言范围的入口点。现有的通用 `handle`、`up` 和 `down` 行为保持不变。
+- 通过 Composer PSR-4 映射安全且确定性地解析 PHP 命名空间。
+- 解析 Blade 模板引用，同时忽略 Blade 注释和转义指令。
+- 仅在 AST 包含明确的框架和接收者证据时，才添加 Laravel Route 到控制器和 Eloquent 关系边。
+- 保持串行和进程池构建在行为上等效。
 
-## Non-goals
+## 非目标
 
-- Replacing the existing PHP parser or import resolver.
-- Inferring Laravel semantics from method names alone.
-- Supporting every Blade directive or dynamic route target.
-- Resolving Composer dependencies outside the repository.
-- Reopening, merging, or otherwise modifying source PR #252.
+- 替换现有的 PHP 解析器或导入解析器。
+- 仅凭方法名推断 Laravel 语义。
+- 支持所有 Blade 指令或动态路由目标。
+- 解析仓库外的 Composer 依赖。
+- 重新打开、合并或以其他方式修改源 PR #252。
 
-## Design
+## 设计
 
-### PHP syntax and entry points
+### PHP 语法和入口点
 
-The existing Tree-sitter tables gain PHP `trait_declaration`,
-`enum_declaration`, and `object_creation_expression`. The current PHP
-`_get_call_name` branch is extended only for object creation, and
-`_get_bases` gains PHP `base_clause` and `class_interface_clause`
-handling.
+现有 Tree-sitter 表新增 PHP `trait_declaration`、`enum_declaration` 和 `object_creation_expression`。当前 PHP `_get_call_name` 分支仅为对象创建扩展，`_get_bases` 新增 PHP `base_clause` 和 `class_interface_clause` 处理。
 
-Flow detection gains a PHP-only pattern set for `boot`, `register`, and
-`__invoke`. Names that are already universal are not duplicated.
+流程检测新增用于 `boot`、`register` 和 `__invoke` 的 PHP 专用模式集。已是通用的名称不会重复。
 
-### Composer PSR-4 resolution
+### Composer PSR-4 解析
 
-`CodeParser` records its resolved repository root. Composer lookup starts at
-the caller directory and stops at that root, inclusive. If no root was supplied,
-the parser uses the nearest VCS root; without a safe boundary it does not climb
-above the caller directory.
+`CodeParser` 记录其解析的仓库根目录。Composer 查找从调用方目录开始，止于该根目录（含）。如果未提供根目录，解析器使用最近的 VCS 根目录；没有安全边界时，不会爬升到调用方目录以上。
 
-Composer data is accepted only when each container has the expected JSON shape:
+仅当每个容器具有预期的 JSON 形状时才接受 Composer 数据：
 
-- document, `autoload`, and `autoload-dev`: objects;
-- `psr-4`: object;
-- prefix: string;
-- mapped path: string or list of strings.
+- 文档、`autoload` 和 `autoload-dev`：对象；
+- `psr-4`：对象；
+- 前缀：字符串；
+- 映射路径：字符串或字符串列表。
 
-Mappings from both sections are combined without overwriting. All valid mapped
-directories are retained in declaration order. Prefixes are normalized and
-searched longest-first. Resolved base directories and target files must remain
-inside the repository after symlink resolution; absolute paths and `..`
-escapes that leave the repository are ignored.
+两个节的映射合并时不覆盖。所有有效的映射目录按声明顺序保留。前缀被规范化并按最长优先搜索。解析后的基目录和目标文件必须在符号链接解析后仍留在仓库内；离开仓库的绝对路径和 `..` 转义将被忽略。
 
-The parsed mapping is immutable. A bounded process-local cache is keyed by the
-Composer path, repository root, file modification time, and size. This lets
-serial parsers and long-lived process-pool workers reuse configuration without
-stale cross-repository results.
+解析后的映射是不可变的。有界进程本地缓存以 Composer 路径、仓库根目录、文件修改时间和大小为键。这使串行解析器和长寿命进程池工作进程能够复用配置，而不产生陈旧的跨仓库结果。
 
-The current ancestor-walk resolver remains as a compatibility fallback after
-Composer resolution.
+当前的祖先查找解析器作为 Composer 解析后的兼容回退保留。
 
-### Blade templates
+### Blade 模板
 
-Compound `.blade.php` names are detected before ordinary `.php` suffix
-handling. A dedicated lightweight parser emits one File node and:
+复合 `.blade.php` 名称在普通 `.php` 后缀处理之前检测。专用的轻量级解析器生成一个 File 节点和：
 
-- `IMPORTS_FROM` for `@extends`, `@include`, and `@component`;
-- `REFERENCES` for `@livewire`.
+- `IMPORTS_FROM`，用于 `@extends`、`@include` 和 `@component`；
+- `REFERENCES`，用于 `@livewire`。
 
-Blade comment spans (`{{-- ... --}}`) are masked while preserving newlines and
-character offsets. The directive matcher requires an unescaped `@`, so
-`@@include` and equivalent escaped forms do not emit edges. Edge line numbers
-therefore remain aligned with the original source.
+Blade 注释跨度（`{{-- ... --}}`）被遮盖，同时保留换行符和字符偏移。指令匹配器要求未转义的 `@`，因此 `@@include` 和等效转义形式不生成边。边的行号因此与原始源保持对齐。
 
-### Laravel semantic evidence
+### Laravel 语义证据
 
-Laravel analysis runs as a separate PHP AST post-pass after generic extraction.
-It never consumes a Tree-sitter node and never recreates the ordinary CALLS
-edge. This preserves current targets such as `Route::get`, `hasMany`, and
-all nested calls.
+Laravel 分析作为独立的 PHP AST 后处理通道在通用提取之后运行。它从不消耗 Tree-sitter 节点，也从不重建普通的 CALLS 边。这保留了当前目标，如 `Route::get`、`hasMany` 和所有嵌套调用。
 
-The post-pass builds namespace-local class import bindings, including aliases
-and grouped imports, and tracks the enclosing class.
+后处理通道构建命名空间局部类导入绑定（包括别名和分组导入），并追踪外层类。
 
-A Route controller CALLS edge is emitted only when:
+仅在以下条件满足时生成 Route 控制器 CALLS 边：
 
-1. the scoped call is a supported route verb;
-2. its receiver is an alias imported from
-   `Illuminate\\Support\\Facades\\Route`, or that full class name is used;
-3. the handler has the static array form
-   `[Controller::class, 'method']`.
+1. 作用域调用是支持的路由动词；
+2. 其接收者是从 `Illuminate\\Support\\Facades\\Route` 导入的别名，或使用了该完整类名；
+3. 处理器具有静态数组形式 `[Controller::class, 'method']`。
 
-An Eloquent REFERENCES edge is emitted only when:
+仅在以下条件满足时生成 Eloquent REFERENCES 边：
 
-1. the call uses a supported relationship method;
-2. the receiver is exactly `$this`;
-3. the enclosing class extends an imported/fully-qualified
-   `Illuminate\\Database\\Eloquent\\Model`;
-4. the first relevant argument is `Target::class`.
+1. 调用使用支持的关系方法；
+2. 接收者恰好是 `$this`；
+3. 外层类扩展了已导入/完全限定的 `Illuminate\\Database\\Eloquent\\Model`；
+4. 第一个相关参数是 `Target::class`。
 
-Imported or fully-qualified controller/model names are resolved through
-Composer. When a target file exists, the semantic edge uses the graph's real
-qualified-name shape (`file.php::Class.method` for routes and
-`file.php::Class` for models). Otherwise it retains a stable short semantic
-target rather than inventing a file.
+导入或完全限定的控制器/模型名称通过 Composer 解析。当目标文件存在时，语义边使用图谱真实的限定名形状（路由为 `file.php::Class.method`，模型为 `file.php::Class`）。否则保留稳定的短语义目标，而不是凭空发明文件名。
 
-## Testing
+## 测试
 
-Each surface is implemented red-first:
+每个界面均以红色优先方式实现：
 
-1. PHP traits, enums, `new`, base clauses, and language-scoped entry points.
-2. Composer malformed shapes, longest prefix, multi-directory mappings,
-   `autoload-dev` merging, cache invalidation/reuse, repository traversal,
-   absolute paths, and symlink escape.
-3. Blade directives, line numbers, comments, escaped directives, malformed
-   input, and ordinary PHP isolation.
-4. Laravel positive alias/FQCN cases and negative unrelated `Route`,
-   non-model relationship, wrong receiver, dynamic handler, and missing-import
-   cases.
-5. Serial/process-pool parity on a Composer PHP project with enough files to
-   enter the parallel path.
+1. PHP trait、枚举、`new`、基类子句和语言范围入口点。
+2. Composer 畸形形状、最长前缀、多目录映射、`autoload-dev` 合并、缓存失效/复用、仓库遍历、绝对路径和符号链接转义。
+3. Blade 指令、行号、注释、转义指令、畸形输入和普通 PHP 隔离。
+4. Laravel 正向别名/FQCN 情况和负向无关 `Route`、非模型关系、错误接收者、动态处理器和缺少导入情况。
+5. 拥有足够文件进入并行路径的 Composer PHP 项目上的串行/进程池对等性。
 
-After focused tests, the full suite, Ruff, schema generation check, graph change
-review, and GitHub CI must pass before the ready PR is opened.
+专注测试之后，完整套件、Ruff、schema 生成检查、图谱变更审查和 GitHub CI 必须通过，才能开启就绪 PR。

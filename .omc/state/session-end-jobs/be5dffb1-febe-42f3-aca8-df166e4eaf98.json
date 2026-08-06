@@ -1,0 +1,304 @@
+{
+  "version": 1,
+  "jobId": "f3cf32c9-89ba-4646-ab40-f3b15456f60b",
+  "sessionId": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+  "scopeKey": "087f72d05a10e4ff567e4dafea4762eb3a8cad54df351645f5390e28b8fb6dbb",
+  "revision": 19,
+  "createdAt": "2026-08-06T07:14:34.867Z",
+  "updatedAt": "2026-08-06T07:19:31.317Z",
+  "producerGraceExpiresAt": "2026-08-06T07:15:04.867Z",
+  "bestEffortDeadlineAt": "2026-08-06T07:15:55.867Z",
+  "producers": {
+    "core": {
+      "state": "sealed",
+      "intentKey": "fee2b6ace1a9d794778a8312f08e70a483ee287a191c325a81500f20b5502090",
+      "payloadDigest": "fee2b6ace1a9d794778a8312f08e70a483ee287a191c325a81500f20b5502090",
+      "sealedAt": "2026-08-06T07:14:34.875Z",
+      "sealedBy": "foreground"
+    },
+    "wiki": {
+      "state": "no-op",
+      "sealedAt": "2026-08-06T07:19:31.295Z",
+      "sealedBy": "recovery"
+    }
+  },
+  "actions": {
+    "foreground-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 0,
+      "idempotencyKey": "91ff9d687cfb0bbd9c9973b9fbc527d1ddfa91208e5fd4b73c6906cba4b8e8ed",
+      "payload": {
+        "transcriptPath": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+        "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "transcript_path": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+          "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+          "prompt_id": "f19f350d-416e-4fa1-9113-bc2c34d8cac8",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "ended_at": "2026-08-06T07:14:34.835Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {},
+        "foregroundResult": {
+          "removedTransientFiles": 1,
+          "completedAt": "2026-08-06T07:14:34.874Z"
+        }
+      },
+      "budgetMs": 9000,
+      "completedAt": "2026-08-06T07:14:34.875Z",
+      "lastOutcomeCode": "completed"
+    },
+    "wiki-capture": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 0,
+      "idempotencyKey": "6f8b79a21352116f12af7161c8f7a64b4fa561bf4da67ee2b75ad5f3eb6b9661",
+      "payload": {
+        "transcriptPath": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+        "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "transcript_path": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+          "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+          "prompt_id": "f19f350d-416e-4fa1-9113-bc2c34d8cac8",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "ended_at": "2026-08-06T07:14:34.835Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "completedAt": "2026-08-06T07:19:31.295Z",
+      "lastOutcomeCode": "producer-absent"
+    },
+    "team-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "expired",
+      "attempts": 0,
+      "idempotencyKey": "985f60bf34663cca540d81c00287f8c1232e5ada2f762da295ba18531e3c0094",
+      "payload": {
+        "transcriptPath": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+        "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "transcript_path": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+          "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+          "prompt_id": "f19f350d-416e-4fa1-9113-bc2c34d8cac8",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "ended_at": "2026-08-06T07:14:34.835Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "lastOutcomeCode": "required-deadline-expired"
+    },
+    "python-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "expired",
+      "attempts": 0,
+      "idempotencyKey": "528bfeb23d7955f4e2b2835eaac267413425adcf80fd0ffdac044b0308da5499",
+      "payload": {
+        "transcriptPath": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+        "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "transcript_path": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+          "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+          "prompt_id": "f19f350d-416e-4fa1-9113-bc2c34d8cac8",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "ended_at": "2026-08-06T07:14:34.835Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "lastOutcomeCode": "required-deadline-expired"
+    },
+    "reply-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "expired",
+      "attempts": 0,
+      "idempotencyKey": "4a8f8ddef2993df17b3d9ee75a259c8b96750337c665b61d5b2346ee323712d9",
+      "payload": {
+        "transcriptPath": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+        "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "transcript_path": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+          "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+          "prompt_id": "f19f350d-416e-4fa1-9113-bc2c34d8cac8",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "ended_at": "2026-08-06T07:14:34.835Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "lastOutcomeCode": "required-deadline-expired"
+    },
+    "callback": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "expired",
+      "attempts": 0,
+      "idempotencyKey": "85a9c47eeb53b8614ecd261a72840ff231cd5375cd04897227e29ed838681b5e",
+      "payload": {
+        "transcriptPath": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+        "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "transcript_path": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+          "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+          "prompt_id": "f19f350d-416e-4fa1-9113-bc2c34d8cac8",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "ended_at": "2026-08-06T07:14:34.835Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000,
+      "lastOutcomeCode": "deadline-expired"
+    },
+    "notification": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "expired",
+      "attempts": 0,
+      "idempotencyKey": "60a30f9287a8682a08a5eea5837998498668d2ad1e8152d4219802bbb20602b6",
+      "payload": {
+        "transcriptPath": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+        "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "transcript_path": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+          "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+          "prompt_id": "f19f350d-416e-4fa1-9113-bc2c34d8cac8",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "ended_at": "2026-08-06T07:14:34.835Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000,
+      "lastOutcomeCode": "deadline-expired"
+    },
+    "openclaw": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "expired",
+      "attempts": 0,
+      "idempotencyKey": "f59138d53a143b23c8865e44370a62f23ec508e8a147d9ef6dc14195fa5dd788",
+      "payload": {
+        "transcriptPath": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+        "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+        "reason": "prompt_input_exit",
+        "input": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "transcript_path": "C:\\Users\\shaoqisun\\.claude\\projects\\C--Users-shaoqisun-Desktop-code-review-graph\\be5dffb1-febe-42f3-aca8-df166e4eaf98.jsonl",
+          "cwd": "C:\\Users\\shaoqisun\\Desktop\\code-review-graph",
+          "prompt_id": "f19f350d-416e-4fa1-9113-bc2c34d8cac8",
+          "hook_event_name": "SessionEnd",
+          "reason": "prompt_input_exit"
+        },
+        "metrics": {
+          "session_id": "be5dffb1-febe-42f3-aca8-df166e4eaf98",
+          "ended_at": "2026-08-06T07:14:34.835Z",
+          "reason": "prompt_input_exit",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000,
+      "lastOutcomeCode": "deadline-expired"
+    }
+  },
+  "owner": null,
+  "phase": "complete",
+  "completion": {
+    "completedAt": "2026-08-06T07:19:31.314Z",
+    "terminalDigest": "2c6afd2c865431f469010d694df5a92c01ea0d4b8244f58b092654af28018aef",
+    "terminalRevision": 18
+  }
+}
