@@ -1,206 +1,205 @@
-# CLAUDE.md - Project Context for Claude Code
+# CLAUDE.md - Claude Code 项目上下文
 
-## Project Overview
+## 项目概述
 
-**code-review-graph** is a persistent, incrementally updated, local-first knowledge graph for token-efficient code review through MCP and the CLI. It parses codebases using Tree-sitter and targeted fallbacks, builds a structural graph in SQLite, and exposes compact context to AI coding tools including Claude Code, Codex, Cursor, Windsurf, Zed, Continue, OpenCode, Gemini CLI, Qwen, Kiro, Qoder, and GitHub Copilot.
+**code-review-graph** 是一个持久化、增量更新、本地优先的知识图谱，面向通过 MCP 与 CLI 进行省 token 代码审查的场景。它使用 Tree-sitter 和有针对性的回退解析器解析代码库，在 SQLite 中构建结构化图谱，并向 AI 编码工具（包括 Claude Code、Codex、Cursor、Windsurf、Zed、Continue、OpenCode、Gemini CLI、Qwen、Kiro、Qoder 和 GitHub Copilot）暴露紧凑的上下文。
 
-## Graph Tool Usage (Token-Efficient)
-When using code-review-graph MCP tools, follow these rules:
-1. First call: `get_minimal_context(task="<description>")` — costs ~100 tokens, gives you the full picture.
-2. All subsequent calls: use `detail_level="minimal"` unless you need more.
-3. Prefer `query_graph_tool` with a specific target over broad `list_*` calls.
-4. The `next_tool_suggestions` field in every response tells you the optimal next step.
-5. Target: ≤5 tool calls per task, ≤800 total tokens of graph context.
+## 图工具使用（省 token）
+使用 code-review-graph 的 MCP 工具时，遵循以下规则：
+1. 首次调用：`get_minimal_context(task="<描述>")` —— 约耗 100 tokens，给你全局视图。
+2. 后续所有调用：除非确需更多信息，一律使用 `detail_level="minimal"`。
+3. 优先用 `query_graph_tool` 指定具体 target，而非宽泛的 `list_*` 调用。
+4. 每个响应里的 `next_tool_suggestions` 字段会告诉你下一步最优动作。
+5. 目标：每个任务 ≤5 次工具调用，图上下文总量 ≤800 tokens。
 
-## Architecture
+## 架构
 
-- **Core Package**: `code_review_graph/` (Python 3.10+)
-  - `parser.py` — Tree-sitter multi-language AST parser plus targeted fallbacks for broad source-language and notebook support
-  - `custom_languages.py` — Config-driven custom language support (`.code-review-graph/languages.toml`, see docs/CUSTOM_LANGUAGES.md)
-  - `graph.py` — SQLite-backed graph store (nodes, edges, weighted-score impact analysis)
-  - `tools/` — 30 MCP tool implementations split by domain
-  - `main.py` — FastMCP server entry point, registers 30 tools + 5 prompts
-  - `incremental.py` — Git-based change detection, file watching
-  - `embeddings.py` — Optional vector embeddings (local sentence-transformers, OpenAI-compatible endpoints, Google Gemini, MiniMax)
-  - `visualization.py` — D3.js interactive HTML graph generator
-  - `cli.py` — CLI entry point (install/init, build, update, postprocess, embed, watch, status, visualize, serve/mcp, wiki, detect-changes, register, unregister, repos, eval, daemon)
-  - `flows.py` — Execution flow detection and criticality scoring
-  - `communities.py` — Community detection (Leiden algorithm or file-based grouping) and architecture overview
-  - `search.py` — FTS5 hybrid search (keyword + vector)
-  - `changes.py` — Risk-scored change impact analysis (detect-changes)
-  - `refactor.py` — Rename preview, dead code detection, refactoring suggestions
-  - `hints.py` — Review hint generation
-  - `prompts.py` — 5 MCP prompt templates (review_changes, architecture_map, debug_issue, onboard_developer, pre_merge_check)
-  - `wiki.py` — Markdown wiki generation from community structure
-  - `skills.py` — Multi-platform install/config generation and shipped skill metadata
-  - `registry.py` — Multi-repo registry helpers
-  - `migrations.py` — Database schema migrations (v1-v9)
-  - `tsconfig_resolver.py` — TypeScript path alias resolution
+- **核心包**：`code_review_graph/`（Python 3.10+）
+  - `parser.py` —— 基于 Tree-sitter 的多语言 AST 解析器，并配有针对性回退解析，以支持广泛的源语言与笔记本
+  - `custom_languages.py` —— 配置驱动的自定义语言支持（`.code-review-graph/languages.toml`，见 docs/CUSTOM_LANGUAGES.md）
+  - `graph.py` —— 基于 SQLite 的图存储（节点、边、加权评分的影响分析）
+  - `tools/` —— 按领域拆分的 30 个 MCP 工具实现
+  - `main.py` —— FastMCP 服务器入口，注册 30 个工具 + 5 个 prompt
+  - `incremental.py` —— 基于 git 的变更检测、文件监听
+  - `embeddings.py` —— 可选的向量嵌入（本地 sentence-transformers、OpenAI 兼容端点、Google Gemini、MiniMax）
+  - `visualization.py` —— D3.js 交互式 HTML 图生成器
+  - `cli.py` —— CLI 入口（install/init、build、update、postprocess、embed、watch、status、visualize、serve/mcp、wiki、detect-changes、register、unregister、repos、eval、daemon）
+  - `flows.py` —— 执行流检测与关键度评分
+  - `communities.py` —— 社区检测（Leiden 算法或按文件分组）与架构概览
+  - `search.py` —— FTS5 混合搜索（关键词 + 向量）
+  - `changes.py` —— 带风险评分的变更影响分析（detect-changes）
+  - `refactor.py` —— 重命名预览、死代码检测、重构建议
+  - `hints.py` —— 审查提示生成
+  - `prompts.py` —— 5 个 MCP prompt 模板（review_changes、architecture_map、debug_issue、onboard_developer、pre_merge_check）
+  - `wiki.py` —— 从社区结构生成 Markdown wiki
+  - `skills.py` —— 多平台安装/配置生成与随包技能元数据
+  - `registry.py` —— 多仓库注册表辅助函数
+  - `migrations.py` —— 数据库 schema 迁移（v1-v9）
+  - `tsconfig_resolver.py` —— TypeScript 路径别名解析
 
-- **VS Code Extension**: `code-review-graph-vscode/` (TypeScript)
-  - Separate subproject with its own `package.json`, `tsconfig.json`
-  - Reads from `.code-review-graph/graph.db` via SQLite
+- **VS Code 扩展**：`code-review-graph-vscode/`（TypeScript）
+  - 独立子项目，有自己的 `package.json`、`tsconfig.json`
+  - 通过 SQLite 读取 `.code-review-graph/graph.db`
 
-- **Database**: `.code-review-graph/graph.db` (SQLite, WAL mode)
+- **数据库**：`.code-review-graph/graph.db`（SQLite，WAL 模式）
 
-## Key Commands
+## 关键命令
 
 ```bash
-# Development
-uv run pytest tests/ --tb=short -q          # Run tests
+# 开发
+uv run pytest tests/ --tb=short -q          # 运行测试
 uv run ruff check code_review_graph/        # Lint
 uv run mypy code_review_graph/ --ignore-missing-imports --no-strict-optional
 
-# Build & test
-uv run code-review-graph build              # Full graph build
-uv run code-review-graph update             # Incremental update
-uv run code-review-graph status             # Show stats
-uv run code-review-graph serve              # Start MCP server
-uv run code-review-graph wiki               # Generate markdown wiki
-uv run code-review-graph detect-changes     # Risk-scored change analysis
-uv run code-review-graph register <path>    # Register repo in multi-repo registry
-uv run code-review-graph repos              # List registered repos
-uv run code-review-graph eval               # Run evaluation benchmarks
+# 构建与测试
+uv run code-review-graph build              # 全量构建图
+uv run code-review-graph update             # 增量更新
+uv run code-review-graph status             # 查看统计
+uv run code-review-graph serve              # 启动 MCP 服务器
+uv run code-review-graph wiki               # 生成 markdown wiki
+uv run code-review-graph detect-changes     # 带风险评分的变更分析
+uv run code-review-graph register <path>    # 将仓库注册到多仓库注册表
+uv run code-review-graph repos              # 列出已注册仓库
+uv run code-review-graph eval               # 运行评估基准
 ```
 
-## Code Conventions
+## 代码规范
 
-- **Line length**: 100 chars (ruff)
-- **Python target**: 3.10+
-- **SQL**: Always use parameterized queries (`?` placeholders), never f-string values
-- **Error handling**: Catch specific exceptions, log with `logger.warning/error`
-- **Thread safety**: `threading.Lock` for shared caches, `check_same_thread=False` for SQLite
-- **Node names**: Always sanitize via `_sanitize_name()` before returning to MCP clients
-- **File reads**: Read bytes once, hash, then parse (TOCTOU-safe pattern)
+- **行长**：100 字符（ruff）
+- **Python 目标**：3.10+
+- **SQL**：一律使用参数化查询（`?` 占位符），绝不把值拼进 f-string
+- **错误处理**：捕获具体异常，用 `logger.warning/error` 记录
+- **线程安全**：共享缓存用 `threading.Lock`，SQLite 用 `check_same_thread=False`
+- **节点名**：返回给 MCP 客户端前一律经 `_sanitize_name()` 处理
+- **文件读取**：读一次字节、哈希、再解析（TOCTOU 安全模式）
 
-## Security Invariants
+## 安全不变量
 
-- No `eval()`, `exec()`, `pickle`, or `yaml.unsafe_load()`
-- No `shell=True` in subprocess calls
-- `_validate_repo_root()` prevents path traversal via repo_root parameter
-- `_sanitize_name()` strips control characters, caps at 256 chars (prompt injection defense)
-- `escH()` in visualization escapes HTML entities including quotes and backticks
-- SRI hash on D3.js CDN script tag
-- API keys only from environment variables, never hardcoded
+- 禁用 `eval()`、`exec()`、`pickle`、`yaml.unsafe_load()`
+- 子进程调用禁用 `shell=True`
+- `_validate_repo_root()` 防止通过 repo_root 参数进行路径穿越
+- `_sanitize_name()` 剥离控制字符，上限 256 字符（防 prompt 注入）
+- 可视化中的 `escH()` 转义 HTML 实体，包括引号与反引号
+- D3.js CDN script 标签带 SRI 哈希
+- API key 只从环境变量读取，绝不硬编码
 
-## Test Structure
+## 测试结构
 
-- `tests/test_parser.py` — Parser correctness, cross-file resolution
-- `tests/test_graph.py` — Graph CRUD, stats, impact radius
-- `tests/test_tools.py` — MCP tool integration tests
-- `tests/test_visualization.py` — Export, HTML generation, C++ resolution
-- `tests/test_incremental.py` — Build, update, migration, git ops
-- `tests/test_multilang.py` — Broad language parsing tests, including SFCs, notebooks, SQL, Perl XS, and modern systems/web languages
-- `tests/test_custom_languages.py` — Config-driven custom languages (languages.toml loader + end-to-end Erlang parse)
-- `tests/test_embeddings.py` — Vector encode/decode, similarity, store
-- `tests/test_flows.py` — Execution flow detection and criticality
-- `tests/test_communities.py` — Community detection, architecture overview
-- `tests/test_changes.py` — Risk-scored change analysis
-- `tests/test_refactor.py` — Rename preview, dead code, suggestions
-- `tests/test_search.py` — FTS5 hybrid search
-- `tests/test_hints.py` — Review hint generation
-- `tests/test_prompts.py` — MCP prompt template tests
-- `tests/test_wiki.py` — Wiki generation
-- `tests/test_context_savings.py` — Estimated context-savings metadata
-- `tests/test_skills.py` — Install/config generation and shipped skill metadata
-- `tests/test_registry.py` — Multi-repo registry
-- `tests/test_migrations.py` — Database migrations
-- `tests/test_eval.py` — Evaluation framework
-- `tests/test_tsconfig_resolver.py` — TypeScript path resolution
-- `tests/test_integration_v2.py` — v2 pipeline integration test
-- `tests/test_action_render.py` — GitHub Action PR comment renderer (`scripts/render_pr_comment.py`)
-- `tests/fixtures/` — Sample files for each supported language
+- `tests/test_parser.py` —— 解析器正确性、跨文件解析
+- `tests/test_graph.py` —— 图 CRUD、统计、影响半径
+- `tests/test_tools.py` —— MCP 工具集成测试
+- `tests/test_visualization.py` —— 导出、HTML 生成、C++ 解析
+- `tests/test_incremental.py` —— 构建、更新、迁移、git 操作
+- `tests/test_multilang.py` —— 广泛语言解析测试，含 SFC、笔记本、SQL、Perl XS 及现代系统/Web 语言
+- `tests/test_custom_languages.py` —— 配置驱动的自定义语言（languages.toml 加载 + Erlang 端到端解析）
+- `tests/test_embeddings.py` —— 向量编解码、相似度、存储
+- `tests/test_flows.py` —— 执行流检测与关键度
+- `tests/test_communities.py` —— 社区检测、架构概览
+- `tests/test_changes.py` —— 带风险评分的变更分析
+- `tests/test_refactor.py` —— 重命名预览、死代码、建议
+- `tests/test_search.py` —— FTS5 混合搜索
+- `tests/test_hints.py` —— 审查提示生成
+- `tests/test_prompts.py` —— MCP prompt 模板测试
+- `tests/test_wiki.py` —— Wiki 生成
+- `tests/test_context_savings.py` —— 估算的上下文节省元数据
+- `tests/test_skills.py` —— 安装/配置生成与随包技能元数据
+- `tests/test_registry.py` —— 多仓库注册表
+- `tests/test_migrations.py` —— 数据库迁移
+- `tests/test_eval.py` —— 评估框架
+- `tests/test_tsconfig_resolver.py` —— TypeScript 路径解析
+- `tests/test_integration_v2.py` —— v2 流水线集成测试
+- `tests/test_action_render.py` —— GitHub Action PR 评论渲染器（`scripts/render_pr_comment.py`）
+- `tests/fixtures/` —— 各支持语言的样本文件
 
-## CI Pipeline
+## CI 流水线
 
-- **lint**: ruff on Python 3.10
-- **type-check**: mypy
-- **security**: bandit scan
-- **test**: pytest matrix (3.10, 3.11, 3.12, 3.13) with 65% coverage minimum
+- **lint**：Python 3.10 上跑 ruff
+- **type-check**：mypy
+- **security**：bandit 扫描
+- **test**：pytest 矩阵（3.10、3.11、3.12、3.13），覆盖率下限 65%
 
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
-## Beads Issue Tracker
+## Beads 问题跟踪
 
-This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
+本项目使用 **bd（beads）** 进行问题跟踪。运行 `bd prime` 查看完整工作流上下文与命令。
 
-### Quick Reference
+### 快速参考
 
 ```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --claim  # Claim work
-bd close <id>         # Complete work
+bd ready              # 查找可用工作
+bd show <id>          # 查看问题详情
+bd update <id> --claim  # 认领工作
+bd close <id>         # 完成工作
 ```
 
-### Rules
+### 规则
 
-- Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
-- Run `bd prime` for detailed command reference and session close protocol
-- Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
+- 所有任务跟踪一律使用 `bd`——不要使用 TodoWrite、TaskCreate 或 markdown TODO 列表
+- 运行 `bd prime` 获取详细命令参考与会话收尾协议
+- 使用 `bd remember` 持久化知识——不要使用 MEMORY.md 文件
 
-## Session Completion
+## 会话收尾
 
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+**结束工作会话时**，你必须完成以下全部步骤。`git push` 成功之前，工作都不算完成。
 
-**MANDATORY WORKFLOW:**
+**强制工作流：**
 
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+1. **为剩余工作建档** —— 为任何需要后续跟进的事项创建 issue
+2. **运行质量门禁**（若有代码变更）—— 测试、lint、构建
+3. **更新问题状态** —— 关闭已完成项，更新进行中的项
+4. **推送到远端** —— 这是强制的：
    ```bash
    git pull --rebase
    bd dolt push
    git push
-   git status  # MUST show "up to date with origin"
+   git status  # 必须显示 "up to date with origin"
    ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+5. **清理** —— 清空 stash，修剪远端分支
+6. **验证** —— 所有变更已提交且已推送
+7. **交接** —— 为下一个会话提供上下文
 
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
+**关键规则：**
+- `git push` 成功之前，工作都不算完成
+- 绝不在推送前停下——那会让工作滞留在本地
+- 绝不说"随时可以推送"——推送是你必须完成的动作
+- 若推送失败，解决后重试，直到成功
 <!-- END BEADS INTEGRATION -->
 
-<!-- code-review-graph MCP tools -->
-## MCP Tools: code-review-graph
+<!-- code-review-graph MCP 工具 -->
+## MCP 工具：code-review-graph
 
-**IMPORTANT: This project has a knowledge graph. ALWAYS use the
-code-review-graph MCP tools BEFORE using Grep/Glob/Read to explore
-the codebase.** The graph is faster, cheaper (fewer tokens), and gives
-you structural context (callers, dependents, test coverage) that file
-scanning cannot.
+**重要：本项目带有知识图谱。在探索代码库时，务必先使用
+code-review-graph 的 MCP 工具，再考虑 Grep/Glob/Read。**
+图更快、更省 token，并且能提供文件扫描无法给出的结构性上下文
+（调用者、依赖方、测试覆盖等）。
 
-### When to use graph tools FIRST
+### 何时优先使用图工具
 
-- **Exploring code**: `semantic_search_nodes_tool` or `query_graph_tool` instead of Grep
-- **Understanding impact**: `get_impact_radius_tool` instead of manually tracing imports
-- **Code review**: `detect_changes_tool` + `get_review_context_tool` instead of reading entire files
-- **Finding relationships**: `query_graph_tool` with callers_of/callees_of/imports_of/tests_for
-- **Architecture questions**: `get_architecture_overview_tool` + `list_communities_tool`
+- **探索代码**：用 `semantic_search_nodes_tool` 或 `query_graph_tool`，而非 Grep
+- **理解影响面**：用 `get_impact_radius_tool`，而非手动追踪 import
+- **代码审查**：用 `detect_changes_tool` + `get_review_context_tool`，而非读取整个文件
+- **查找关系**：用 `query_graph_tool` 配合 callers_of / callees_of / imports_of / tests_for
+- **架构问题**：用 `get_architecture_overview_tool` + `list_communities_tool`
 
-Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
+仅当图无法覆盖你的需求时，才回退到 Grep/Glob/Read。
 
-### Key Tools
+### 关键工具
 
-| Tool | Use when |
+| 工具 | 适用场景 |
 |------|----------|
-| `detect_changes_tool` | Reviewing code changes — gives risk-scored analysis |
-| `get_review_context_tool` | Need source snippets for review — token-efficient |
-| `get_impact_radius_tool` | Understanding blast radius of a change |
-| `get_affected_flows_tool` | Finding which execution paths are impacted |
-| `query_graph_tool` | Tracing callers, callees, imports, tests, dependencies |
-| `semantic_search_nodes_tool` | Finding functions/classes by name or keyword |
-| `get_architecture_overview_tool` | Understanding high-level codebase structure |
-| `refactor_tool` | Planning renames, finding dead code |
+| `detect_changes_tool` | 审查代码变更——给出带风险评分的分析 |
+| `get_review_context_tool` | 审查时需要源码片段——省 token |
+| `get_impact_radius_tool` | 理解某次变更的影响半径 |
+| `get_affected_flows_tool` | 查找受影响的执行路径 |
+| `query_graph_tool` | 追踪调用者、被调用者、import、测试、依赖 |
+| `semantic_search_nodes_tool` | 按名称或关键字查找函数/类 |
+| `get_architecture_overview_tool` | 理解代码库的高层结构 |
+| `refactor_tool` | 规划重命名、查找死代码 |
 
-### Workflow
+### 工作流
 
-1. The graph auto-updates on file changes (via hooks).
-2. Use `detect_changes_tool` for code review.
-3. Use `get_affected_flows_tool` to understand impact.
-4. Use `query_graph_tool` pattern="tests_for" to check coverage.
+1. 图会在文件变更时自动更新（通过钩子）。
+2. 代码审查时使用 `detect_changes_tool`。
+3. 用 `get_affected_flows_tool` 理解影响面。
+4. 用 `query_graph_tool` 的 pattern="tests_for" 检查测试覆盖。

@@ -11,9 +11,12 @@
   </a>
 </p>
 
+> **注意：** 本翻译对应较早的版本；基准测试数据和平台列表可能落后于[英文 README](README.md)。
+
 <p align="center">
-  <strong>Stop burning tokens. Start reviewing smarter.</strong>
+  <strong>不再浪费 token，让代码审查更智能。</strong>
 </p>
+
 <p align="center">
   <a href="README.md">English</a> |
   <a href="README.zh-CN.md">简体中文</a> |
@@ -34,482 +37,232 @@
   <a href="https://discord.gg/3p58KXqGFN"><img src="https://img.shields.io/badge/discord-join-5865F2?style=flat-square&logo=discord&logoColor=white" alt="Discord"></a>
 </p>
 
-<p align="center">
-  <a href="docs/USAGE.md">Usage</a> ·
-  <a href="docs/COMMANDS.md">Commands</a> ·
-  <a href="docs/FAQ.md">FAQ</a> ·
-  <a href="docs/TROUBLESHOOTING.md">Troubleshooting</a> ·
-  <a href="docs/GITHUB_ACTION.md">GitHub Action</a> ·
-  <a href="docs/REPRODUCING.md">Reproducing the benchmarks</a> ·
-  <a href="docs/ROADMAP.md">Roadmap</a>
-</p>
-
 <br>
 
-AI coding tools can end up re-reading large parts of your codebase on review tasks. `code-review-graph` fixes that. It builds a structural map of your code with [Tree-sitter](https://tree-sitter.github.io/tree-sitter/), tracks changes incrementally, and gives your AI assistant precise context via [MCP](https://modelcontextprotocol.io/) so it reads only what matters.
+AI 编码工具在审查任务中可能会反复读取代码库的大量内容。`code-review-graph` 解决了这个问题。它使用 [Tree-sitter](https://tree-sitter.github.io/tree-sitter/) 构建代码的结构化映射，增量跟踪变更，并通过 [MCP](https://modelcontextprotocol.io/) 为 AI 助手提供精准的上下文，使其只读取真正需要的内容。
 
 <p align="center">
-  <img src="diagrams/diagram1_before_vs_after.png" alt="The Token Problem: reading flask's whole corpus costs 143,594 tokens, a graph answer costs 2,196 — 71.0x fewer" width="85%" />
+  <img src="diagrams/diagram1_before_vs_after.png" alt="Token 问题：读完 flask 的全部源码需要 143,594 个 token，而图给出的回答只需 2,196 个——减少 71.0 倍" width="85%" />
 </p>
 
 ---
 
-## Quick Start
+## 快速开始
 
 ```bash
-pip install code-review-graph                     # or: pipx install code-review-graph
-code-review-graph install          # auto-detects and configures all supported platforms
-code-review-graph build            # parse your codebase
+pip install code-review-graph                     # 或: pipx install code-review-graph
+code-review-graph install          # 自动检测并配置所有支持的平台
+code-review-graph build            # 解析代码库
 ```
 
-One command sets up everything. `install` detects which AI coding tools you have, writes the correct MCP configuration for each one, installs platform-native hooks/skills where supported, and injects graph-aware instructions into your platform rules. It auto-detects whether you installed via `uvx` or `pip`/`pipx` and generates the right config. Restart your editor/tool after installing.
+一条命令完成所有配置。`install` 会检测你安装了哪些 AI 编码工具，为每个工具写入正确的 MCP 配置，并将图感知指令注入平台规则。它会自动判断你是通过 `uvx` 还是 `pip`/`pipx` 安装的，并生成相应的配置。安装后请重启编辑器或工具。
 
 <p align="center">
-  <img src="diagrams/diagram8_supported_platforms.png" alt="One Install, Every Platform: auto-detects Codex, Claude Code, CodeBuddy Code, Cursor, Windsurf, Zed, Continue, OpenCode, Antigravity, Gemini CLI, Qwen, Qoder, Kiro, GitHub Copilot, and GitHub Copilot CLI" width="85%" />
+  <img src="diagrams/diagram8_supported_platforms.png" alt="一次安装即可自动检测并配置支持的 AI 编码工具" width="85%" />
 </p>
 
-To target a specific platform:
+如需指定特定平台：
 
 ```bash
-code-review-graph install --platform codex       # configure only Codex
-code-review-graph install --platform cursor      # configure only Cursor
-code-review-graph install --platform claude-code  # configure only Claude Code
-code-review-graph install --platform gemini-cli   # configure only Gemini CLI
-code-review-graph install --platform antigravity   # configure only Antigravity
-code-review-graph install --platform windsurf     # configure only Windsurf
-code-review-graph install --platform zed          # configure only Zed
-code-review-graph install --platform continue     # configure only Continue
-code-review-graph install --platform opencode     # configure only OpenCode
-code-review-graph install --platform qwen         # configure only Qwen
-code-review-graph install --platform qoder        # configure only Qoder
-code-review-graph install --platform kiro         # configure only Kiro
-code-review-graph install --platform copilot      # configure only GitHub Copilot (VS Code)
-code-review-graph install --platform copilot-cli  # configure only GitHub Copilot CLI
-code-review-graph install --platform codebuddy    # configure only CodeBuddy Code
+code-review-graph install --platform codex       # 仅配置 Codex
+code-review-graph install --platform cursor      # 仅配置 Cursor
+code-review-graph install --platform claude-code  # 仅配置 Claude Code
+code-review-graph install --platform kiro         # 仅配置 Kiro
 ```
 
-Requires Python 3.10+. For the best experience, install [uv](https://docs.astral.sh/uv/) (the MCP config will use `uvx` if available, otherwise falls back to the `code-review-graph` command directly).
+需要 Python 3.10+。为获得最佳体验，建议安装 [uv](https://docs.astral.sh/uv/)（如果可用，MCP 配置将使用 `uvx`，否则直接使用 `code-review-graph` 命令）。
 
-To remove CRG from a Git or SVN project, use the symmetric uninstall command
-from anywhere inside its working tree. The target is normalized to the working
-tree root, and non-repository directories are refused. It removes only
-CRG-owned files and entries; unrelated MCP servers, hooks, skills, and JSONC
-comments remain untouched. Shared configuration changes use atomic replacement
-so a failed write leaves the original file intact.
-
-```bash
-code-review-graph uninstall --dry-run    # preview every action; write nothing
-code-review-graph uninstall              # preview, ask for confirmation, then apply
-code-review-graph uninstall --yes        # apply without prompting
-code-review-graph uninstall --all-repos  # also clean every registered repository
-code-review-graph uninstall --keep-data  # remove integrations but keep graph databases
-code-review-graph uninstall --keep-user-configs --repo .  # clean this project only
-```
-
-Then open your project and ask your AI assistant:
+然后打开项目，向 AI 助手发出指令：
 
 ```
 Build the code review graph for this project
 ```
 
-The initial build takes ~10 seconds for a 500-file project. After that, watch mode and supported hooks can keep the graph updated automatically.
-
-
-## How It Works
-
-<p align="center">
-  <img src="diagrams/diagram7_mcp_integration_flow.png" alt="How your AI assistant uses the graph: User asks for review, AI checks MCP tools, graph returns blast radius and risk scores, AI reads only what matters" width="80%" />
-</p>
-
-Your repository is parsed into an AST with Tree-sitter, stored as a graph of nodes (functions, classes, imports) and edges (calls, inheritance, test coverage), then queried at review time to compute the minimal set of files your AI assistant needs to read.
-
-<p align="center">
-  <img src="diagrams/diagram2_architecture_pipeline.png" alt="Architecture pipeline: Repository to Tree-sitter Parser to SQLite Graph to Blast Radius to Minimal Review Set" width="100%" />
-</p>
-
-### Blast-radius analysis
-
-When a file changes, the graph traces every caller, dependent, and test that could be affected. This is the "blast radius" of the change. Your AI reads only these files instead of scanning the whole project.
-
-<p align="center">
-  <img src="diagrams/diagram3_blast_radius.png" alt="Blast radius visualization showing how a change to login() propagates to callers, dependents, and tests" width="70%" />
-</p>
-
-### Incremental updates in seconds
-
-When hooks or watch mode are enabled, file saves and supported commit hooks trigger incremental updates. The graph diffs changed files, finds their dependents through the graph's own import and call edges, and re-parses only the files whose SHA-256 hash actually changed. On a ~3,000-file project (django) a two-file edit re-indexes in about 2.5 seconds on the path the hooks use, of which ~1.4 s is process start-up; a no-op update costs only that start-up. See [Incremental update latency](docs/REPRODUCING.md#incremental-update-latency) for the full measurement.
-
-<p align="center">
-  <img src="diagrams/diagram4_incremental_update.png" alt="Incremental update flow: a supported hook or watch update triggers a git diff, dependents are found through graph edges, and only files whose SHA-256 hash changed are re-parsed" width="90%" />
-</p>
-
-### Whole codebase or targeted answer?
-
-The bigger the repository, the more token waste hurts. Instead of feeding a whole corpus to the model, the graph returns an answer-shaped slice of it: on this repository, 208,821 source tokens become ~3,190 tokens per question.
-
-<p align="center">
-  <img src="diagrams/diagram6_monorepo_funnel.png" alt="code-review-graph repo: 208,821 source tokens funnel down to ~3,190 token graph responses — 68x fewer tokens per question" width="80%" />
-</p>
-
-### Broad language coverage + Jupyter notebooks
-
-<p align="center">
-  <img src="diagrams/diagram9_language_coverage.png" alt="Language coverage organized by category: Web, Backend, Systems, Mobile, Scripting, Shells, Domain, and Other, plus Jupyter and Databricks notebook support" width="90%" />
-</p>
-
-Parser support covers functions, classes, imports, call sites, inheritance, and test detection across the current parser surface, using Tree-sitter where available and targeted fallbacks where needed. Current support includes Python, JavaScript/TypeScript/TSX, Go, Rust, Java, C/C++, C#, VB.NET, Ruby, Kotlin, Swift, PHP, Scala, Solidity, Dart, R, Perl, Lua/Luau, Objective-C, shell scripts, Elixir, Zig, PowerShell, Julia, ReScript, GDScript, Nix, Verilog/SystemVerilog, SQL, Terraform/OpenTofu structure (`.tf`; generic `.hcl` files are recognized as file nodes), Ansible playbooks/roles/tasks, Vue/Svelte SFCs, Astro files parsed through the TypeScript parser, Jupyter/Databricks notebooks (`.ipynb`), and Perl XS files (`.xs`). Generic YAML is not treated as source code.
-
-PHP projects additionally get repository-bounded Composer PSR-4 resolution,
-Blade template references, and Laravel Route/Eloquent semantic edges when the
-source includes explicit framework imports, model inheritance, and receiver
-evidence.
-
-### Add your own language (no fork needed)
-
-If your repo uses a language the parser does not cover yet, drop a `languages.toml` into `.code-review-graph/` mapping file extensions to any grammar bundled in `tree_sitter_language_pack`, plus the tree-sitter node types for functions, classes, imports, and calls:
-
-```toml
-[languages.erlang]
-extensions = [".erl"]
-grammar = "erlang"
-function_node_types = ["function_clause"]
-class_node_types = ["record_decl"]
-import_node_types = ["import_attribute"]
-call_node_types = ["call"]
-```
-
-The generic tree-sitter walker handles extraction from there — no code changes, and built-in languages can never be overridden. See [docs/CUSTOM_LANGUAGES.md](docs/CUSTOM_LANGUAGES.md) for the schema reference, validation rules, and a worked end-to-end example.
-
-### Risk-scored PR reviews in CI (GitHub Action)
-
-The same analysis runs as a composite GitHub Action — and it stays local-first: the knowledge graph is built and queried entirely on your CI runner, with no source code sent to any external service. On each pull request the action posts a single sticky comment with risk-scored functions, affected execution flows, and test gaps, updated in place on every push. An optional `fail-on-risk` input turns the review into a merge gate.
-
-```yaml
-# .github/workflows/code-review-graph.yml
-on:
-  pull_request:
-
-permissions:
-  contents: read
-  pull-requests: write
-
-jobs:
-  review:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: tirth8205/code-review-graph@v2.3.6
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-```
-
-See [docs/GITHUB_ACTION.md](docs/GITHUB_ACTION.md) for inputs, risk levels, and caching details, or the dogfood workflow this repo runs on itself in [`.github/workflows/pr-review.yml`](.github/workflows/pr-review.yml).
+首次构建在 500 个文件的项目上大约需要 10 秒。此后，可通过 watch 模式以及支持的平台钩子自动更新图。
 
 ---
 
-## Benchmarks
+## 工作原理
 
 <p align="center">
-  <img src="diagrams/diagram5_benchmark_board.png" alt="Benchmarks across 6 real repositories: ~65x median per-question token reduction (376x max), 0.69 average impact F1 against graph-derived ground truth" width="85%" />
+  <img src="diagrams/diagram7_mcp_integration_flow.png" alt="AI 助手如何使用图：用户请求审查，AI 查询 MCP 工具，图返回影响范围和风险评分，AI 仅读取关键内容" width="80%" />
 </p>
 
-**Headline number: the median per-question token reduction across the 6 repos is ~65x** (whole-corpus baseline vs graph query). The **376x maximum** is a single best-case repo (fastapi, the largest corpus) — not the typical result.
+代码库通过 Tree-sitter 解析为 AST，以节点（函数、类、导入）和边（调用、继承、测试覆盖）的形式存储为图，然后在审查时查询，计算 AI 助手需要读取的最小文件集。
 
-All numbers come from the automated evaluation runner against 6 real open-source repositories (13 commits total). Every config pins an upstream SHA, the Leiden community detector runs with a fixed seed, and embeddings are deterministic on CPU — so two runs on different machines produce identical numbers. The full reproduction recipe with expected outputs is in [`docs/REPRODUCING.md`](docs/REPRODUCING.md). A weekly report-only run on the two smallest configs lives in [`.github/workflows/eval.yml`](.github/workflows/eval.yml).
+<p align="center">
+  <img src="diagrams/diagram2_architecture_pipeline.png" alt="架构流程：代码库 -> Tree-sitter 解析器 -> SQLite 图 -> 影响半径 -> 最小审查集" width="100%" />
+</p>
 
-<details>
-<summary><strong>Token efficiency: ~65x median per-question reduction (range 36x – 376x; whole-corpus vs graph query)</strong></summary>
-<br>
+### 影响半径分析
 
-For a typical agent question (`"how does authentication work"`, `"what is the main entry point"`, etc.), the graph returns ~2,000–3,500 tokens of targeted search hits + neighbor edges instead of forcing the agent to read every source file. The table below averages over the 5 sample questions defined in `code_review_graph/token_benchmark.py`.
+当文件发生变更时，图会追踪所有可能受影响的调用者、依赖项和测试。这就是变更的"影响半径"。AI 只需读取这些文件，而无需扫描整个项目。
 
-| Repo | Snapshot SHA | naive_corpus_tokens | avg graph_tokens | Reduction |
-|------|---|-----------------:|----------------:|----------:|
-| fastapi | `22381558` | 948,793 | 2,653 | **375.6x** |
-| flask | `a29f88ce` | 143,594 | 2,196 | **71.0x** |
-| code-review-graph | `84bde354` | 208,821 | 3,190 | **68.1x** |
-| gin | `5c00df8a` | 166,868 | 2,766 | **61.9x** |
-| httpx | `b55d4635` | 142,356 | 2,661 | **60.6x** |
-| express | `b4ab7d65` | 136,052 | 3,936 | **36.0x** |
+<p align="center">
+  <img src="diagrams/diagram3_blast_radius.png" alt="影响半径可视化：展示 login() 的变更如何传播到调用者、依赖项和测试" width="70%" />
+</p>
 
-Median per-question reduction across the 6 repos: **~65x**. The range is 36x – 376x, where **376x is the best case** (fastapi, the largest corpus), not the headline.
+### 增量更新，不到 2 秒
 
-> Re-captured 2026-08-02 from clean clones at the pinned SHAs (crg 2.3.7, local `all-MiniLM-L6-v2` embeddings). These numbers are lower than the 2026-05-25 capture they replace: the graph response grew as node embedding text became richer, so `avg graph_tokens` rose across every repo. fastapi is now measured at its current pin `22381558` rather than the retired `0227991a`.
+启用钩子或 watch 模式后，文件保存和受支持的提交钩子会触发增量更新。图对变更文件做差异比较，沿着图自身的 import 与调用边找到相关依赖，并且只重新解析 SHA-256 哈希确实发生变化的文件。一个 2,900 文件的项目重新索引不到 2 秒。
 
-The whole-corpus baseline above is an upper bound no real agent pays: a competent agent greps for identifiers and reads only the best-matching files. The `agent_baseline` eval benchmark measures that realistic baseline — a pure-python grep over the corpus, top-3 files by match count, token-counted and compared to the graph query cost (`evaluate/results/<repo>_agent_baseline_*.csv`).
+<p align="center">
+  <img src="diagrams/diagram4_incremental_update.png" alt="增量更新流程：钩子或 watch 更新触发 git diff，通过图的边找到依赖项，仅重新解析 SHA-256 哈希发生变化的文件" width="90%" />
+</p>
 
-The formal `eval/benchmarks/token_efficiency.py` benchmark measures a different scenario — full `get_review_context()` JSON versus just the changed-file content of a commit — and reports ratios below 1 for small commits, because the review-context response carries impact-radius edges plus source snippets that exceed a tiny single-file diff. That is not a bug; the two benchmarks answer different questions. See [`docs/REPRODUCING.md`](docs/REPRODUCING.md) for the full methodology.
+### 整个代码库，还是有的放矢的回答？
 
-Since v2.3.4, review and impact tools attach a compact `context_savings` estimate so MCP clients can see the approximate context saved per call. In v2.3.5 the CLI surfaces this as the boxed `Token Savings` panel shown above (see "Token Savings panel" in the Usage section) and adds `--verify` to cross-check against OpenAI's `cl100k_base` tokenizer. Calibration data in [`docs/REPRODUCING.md`](docs/REPRODUCING.md) shows the estimate is within ~1% of real GPT-4 tokens in aggregate across 222 sample files.
+仓库越大，token 浪费越让人心疼。图不会把整个语料交给模型，而是只返回与回答相关的那一部分：在本仓库中，208,821 个源码 token 会缩减为每个问题约 3,190 个 token。
 
-</details>
+<p align="center">
+  <img src="diagrams/diagram6_monorepo_funnel.png" alt="code-review-graph 仓库：208,821 个源码 token 收敛为约 3,190 token 的图响应——每个问题的 token 减少 68 倍" width="80%" />
+</p>
 
-<details>
-<summary><strong>Impact accuracy: 0.69 average F1 against graph-derived ground truth (recall 1.0 is a circular upper bound, not "100% recall")</strong></summary>
-<br>
+### 广泛语言覆盖 + Jupyter 笔记本
 
-Blast-radius analysis recovers every file in the ground truth on all 13 evaluation commits — **but read that as an upper bound, not as "100% recall"**: in this mode the ground truth (changed files + files with call/import edges into them) is derived from the same graph the predictor traverses, so it is circular by construction. The over-prediction visible in the precision column is a deliberate trade-off: better to flag too many files than miss a broken dependency.
+<p align="center">
+  <img src="diagrams/diagram9_language_coverage.png" alt="按类别组织的语言覆盖：Web、后端、系统、移动端、脚本、Shell、领域专用、其他，外加 Jupyter/Databricks 笔记本支持" width="90%" />
+</p>
 
-| Repo | Commits | Avg F1 | Avg Precision | Recall (graph-derived upper bound) |
-|------|--------:|-------:|--------------:|-------:|
-| httpx | 2 | 0.863 | 0.785 | 1.0 |
-| code-review-graph | 2 | 0.734 | 0.584 | 1.0 |
-| fastapi | 2 | 0.697 | 0.539 | 1.0 |
-| express | 2 | 0.667 | 0.500 | 1.0 |
-| flask | 2 | 0.633 | 0.485 | 1.0 |
-| gin | 3 | 0.609 | 0.439 | 1.0 |
-| **Average** | **13** | **0.693** | **0.546** | **1.000** |
-
-The benchmark also runs an honest **co-change mode**: the predictor is seeded with a single changed file and graded against the *other* files the author actually touched in the same commit — independent-ish evidence from git history, not from the graph. Both modes appear side by side in the result CSVs (`ground_truth_mode` column). As of the 2026-08-02 capture that mode returns `predicted_files = 0` on every graded commit, so it is not yet a usable measurement and no co-change number is quoted here — the harness needs fixing before the mode says anything about accuracy.
-
-</details>
-
-<details>
-<summary><strong>Build performance</strong></summary>
-<br>
-
-| Repo | Files | Nodes | Edges | Flow Detection | Search Latency |
-|------|------:|------:|------:|---------------:|---------------:|
-| express | 141 | 1,910 | 17,553 | 106ms | 0.7ms |
-| fastapi | 1,122 | 6,285 | 27,117 | 128ms | 1.5ms |
-| flask | 83 | 1,446 | 7,974 | 95ms | 0.7ms |
-| gin | 99 | 1,286 | 16,762 | 111ms | 0.5ms |
-| httpx | 60 | 1,253 | 7,896 | 96ms | 0.4ms |
-
-</details>
-
-### Limitations and known weaknesses
-
-- **Impact "recall 1.0" is graph-derived and circular:** the historical ground truth comes from the same graph edges the predictor walks, so it is an upper bound by construction. The honest co-change mode (grade against files actually co-changed in the same commit) is measured alongside it; expect those numbers to be substantially lower.
-- **Small single-file changes:** Graph context can exceed naive file reads for trivial edits (see express results above). The overhead is the structural metadata that enables multi-file analysis.
-- **Search quality (MRR 0.35):** Keyword search finds the right result in the top-4 for most queries, but ranking needs improvement. Express queries return 0 hits due to module-pattern naming.
-- **Flow detection (33% recall):** Framework and conventional entry patterns are strongest for Python and PHP/Laravel. JavaScript and Go flow detection needs work.
-- **Precision vs recall trade-off:** Impact analysis is deliberately conservative. It flags files that *might* be affected, which means some false positives in large dependency graphs.
+解析器支持覆盖当前解析面中的函数、类、导入、调用点、继承和测试检测：能用 Tree-sitter 的地方使用 Tree-sitter，需要时使用有针对性的回退解析。支持范围包括 Python、JavaScript/TypeScript/TSX、Go、Rust、Java、C/C++、C#、Ruby、Kotlin、Swift、PHP、Scala、Solidity、Dart、R、Perl、Lua/Luau、Objective-C、shell 脚本、Elixir、Zig、PowerShell、Julia、ReScript、GDScript、Nix、Verilog/SystemVerilog、SQL、Vue/Svelte 单文件组件、按 TypeScript 解析的 Astro 文件、Jupyter/Databricks 笔记本（`.ipynb`）和 Perl XS 文件（`.xs`）。
 
 ---
 
-## Features
+## 基准测试
 
-| Feature | Details |
-|---------|---------|
-| **Incremental updates** | Re-parses only the files whose hash changed. On a ~3,000-file repo a two-file edit takes ~2.5s on the hook path ([measured](docs/REPRODUCING.md#incremental-update-latency)). |
-| **Broad language + notebook support** | Python, JavaScript/TypeScript/TSX, Go, Rust, Java, C/C++, C#, VB.NET, Ruby, Kotlin, Swift, PHP, Scala, Solidity, Dart, R, Perl, Lua/Luau, Objective-C, shell scripts, Elixir, Zig, PowerShell, Julia, ReScript, GDScript, Nix, Verilog/SystemVerilog, SQL, Terraform/OpenTofu structure (`.tf`; generic `.hcl` files are file-only), Ansible playbooks/roles/tasks, Vue/Svelte SFCs, Astro files parsed through the TypeScript parser, Jupyter/Databricks (.ipynb), and Perl XS (.xs) |
-| **Framework-aware PHP parsing** | Repository-bounded Composer PSR-4 imports, Blade template references, and evidence-gated Laravel Route-to-controller and Eloquent relationship edges |
-| **Blast-radius analysis** | Shows which functions, classes, and files are likely affected by a change |
-| **Auto-update hooks** | Hooks and watch mode can update the graph on file saves and supported commit hooks |
-| **Semantic search** | Optional vector embeddings via sentence-transformers, Google Gemini, MiniMax, or any OpenAI-compatible endpoint (real OpenAI, Azure, new-api, LiteLLM, vLLM, LocalAI) |
-| **Interactive visualisation** | D3.js force-directed graph with search, community legend toggles, and degree-scaled nodes |
-| **Hub & bridge detection** | Find most-connected nodes and architectural chokepoints via betweenness centrality |
-| **Surprise scoring** | Detect unexpected coupling: cross-community, cross-language, peripheral-to-hub edges |
-| **Knowledge gap analysis** | Identify isolated nodes, untested hotspots, thin communities, and structural weaknesses |
-| **Suggested questions** | Auto-generated review questions from graph analysis (bridges, hubs, surprises) |
-| **Edge confidence** | Three-tier confidence scoring (EXTRACTED/INFERRED/AMBIGUOUS) with float scores on edges |
-| **Graph traversal** | Free-form BFS/DFS exploration from any node with configurable depth and token budget |
-| **Export formats** | GraphML (Gephi/yEd), Neo4j Cypher, Obsidian vault with wikilinks, SVG static graph |
-| **Graph diff** | Compare graph snapshots over time: new/removed nodes, edges, community changes |
-| **Token benchmarking** | Measure naive full-corpus tokens vs graph query tokens with per-question ratios |
-| **Estimated context savings** | Compact `context_savings` metadata on relevant MCP/CLI review outputs, labelled as estimated and kept to three small fields |
-| **Memory loop** | Persist Q&A results as markdown for re-ingestion, so the graph grows from queries |
-| **Community auto-split** | Oversized communities (>25% of graph) are recursively split via Leiden |
-| **Execution flows** | Trace call chains from entry points, sorted by weighted criticality |
-| **Community detection** | Cluster related code via Leiden algorithm with resolution scaling for large graphs |
-| **Architecture overview** | Auto-generated architecture map with coupling warnings |
-| **Risk-scored reviews** | `detect_changes` maps diffs to affected functions, flows, and test gaps |
-| **Custom languages** | Add new languages via `.code-review-graph/languages.toml` — no fork or code changes needed |
-| **GitHub Action** | Sticky risk-scored PR review comments in CI, with an optional `fail-on-risk` merge gate |
-| **Refactoring tools** | Rename preview, framework-aware dead code detection, community-driven suggestions |
-| **Wiki generation** | Auto-generate markdown wiki from community structure |
-| **Multi-repo registry** | Register multiple repos, search across all of them |
-| **Multi-repo daemon** | `crg-daemon` watches multiple repos as child processes, with health checks and auto-restart |
-| **MCP prompts** | 5 workflow templates: review, architecture, debug, onboard, pre-merge |
-| **Full-text search** | FTS5-powered hybrid search combining keyword and vector similarity |
-| **Local storage** | SQLite file in `.code-review-graph/`. Core graph storage needs no external database or cloud service. |
-| **Watch mode** | Continuous graph updates as you work |
+<p align="center">
+  <img src="diagrams/diagram5_benchmark_board.png" alt="对 6 个真实仓库的基准测试：每个问题的 token 减少中位数约 65 倍（最高 376 倍），对图生成的基准答案平均 F1 为 0.71" width="85%" />
+</p>
+
+所有数据来自针对 6 个真实开源仓库（共 13 次提交）的自动化评估。可通过 `code-review-graph eval --all` 复现。完整基准测试数据请参阅[英文 README](README.md)。
 
 ---
 
-## Usage
+## 功能一览
+
+| 功能 | 说明 |
+|------|------|
+| **增量更新** | 仅重新解析变更文件，后续更新不到 2 秒完成 |
+| **广泛语言覆盖 + 笔记本** | Python, JavaScript/TypeScript/TSX, Go, Rust, Java, C/C++, C#, Ruby, Kotlin, Swift, PHP, Scala, Solidity, Dart, R, Perl, Lua/Luau, Objective-C, shell, Elixir, Zig, PowerShell, Julia, ReScript, GDScript, Nix, Verilog/SystemVerilog, SQL, Vue/Svelte SFCs, Astro files parsed as TypeScript, Jupyter/Databricks (.ipynb) |
+| **影响半径分析** | 展示某次变更可能影响的函数、类和文件 |
+| **自动更新钩子** | 每次文件编辑和 git 提交时自动更新图，无需手动干预 |
+| **语义搜索** | 可选的向量嵌入，支持 sentence-transformers、Google Gemini、MiniMax，或任何 OpenAI 兼容端点（真实 OpenAI、Azure、new-api、LiteLLM、vLLM、LocalAI） |
+| **交互式可视化** | D3.js 力导向图，支持搜索、社区图例切换和按度数缩放的节点 |
+| **Hub 与 Bridge 检测** | 查找连接最多的节点和通过介数中心性发现架构瓶颈 |
+| **异常评分** | 检测意外耦合：跨社区、跨语言、外围到核心的边 |
+| **知识缺口分析** | 识别孤立节点、未测试热点、薄弱社区和结构性弱点 |
+| **智能提问** | 基于图分析（桥接点、枢纽、异常）自动生成审查问题 |
+| **边置信度** | 三级置信度评分（EXTRACTED/INFERRED/AMBIGUOUS），边上附带浮点分数 |
+| **图遍历** | 从任意节点进行自由 BFS/DFS 探索，可配置深度和 token 预算 |
+| **导出格式** | GraphML (Gephi/yEd)、Neo4j Cypher、Obsidian 知识库（含 wikilinks）、SVG 静态图 |
+| **图差异** | 比较不同时间的图快照：新增/删除的节点、边和社区变化 |
+| **Token 基准测试** | 测量朴素全量 token 与图查询 token，附带逐题比率 |
+| **记忆循环** | 将问答结果持久化为 Markdown 以供重新摄入，使图从查询中不断成长 |
+| **社区自动分割** | 过大的社区（>图的 25%）通过 Leiden 算法递归分割 |
+| **执行流** | 从入口点追踪调用链，按加权关键度排序 |
+| **社区检测** | 通过 Leiden 算法聚类相关代码，大型图自动调节分辨率 |
+| **架构概览** | 自动生成架构图，附带耦合警告 |
+| **风险评分审查** | `detect_changes` 将差异映射到受影响的函数、执行流和测试缺口 |
+| **重构工具** | 重命名预览、框架感知的死代码检测、基于社区的重构建议 |
+| **Wiki 生成** | 从社区结构自动生成 Markdown Wiki |
+| **多仓库注册** | 注册多个仓库，跨仓库搜索 |
+| **MCP 提示模板** | 5 种工作流模板：审查、架构、调试、入职引导、合并前检查 |
+| **全文搜索** | 基于 FTS5 的混合搜索，结合关键词和向量相似度 |
+| **本地存储** | SQLite 文件存储在 `.code-review-graph/` 中，核心图存储无需外部数据库或云服务 |
+| **监听模式** | 工作时持续更新图 |
+
+---
+
+## 使用方式
 
 <details>
-<summary><strong>Slash commands</strong></summary>
+<summary><strong>斜杠命令</strong></summary>
 <br>
 
-| Command | Description |
-|---------|-------------|
-| `/code-review-graph:build-graph` | Build or rebuild the code graph |
-| `/code-review-graph:review-delta` | Review changes since last commit |
-| `/code-review-graph:review-pr` | Full PR review with blast-radius analysis |
+| 命令 | 说明 |
+|------|------|
+| `/code-review-graph:build-graph` | 构建或重新构建代码图 |
+| `/code-review-graph:review-delta` | 审查自上次提交以来的变更 |
+| `/code-review-graph:review-pr` | 完整的 PR 审查，含影响半径分析 |
 
 </details>
 
 <details>
-<summary><strong>CLI reference</strong></summary>
+<summary><strong>CLI 参考</strong></summary>
 <br>
 
 ```bash
-code-review-graph install          # Auto-detect and configure all platforms
-code-review-graph install --platform <name>  # Target a specific platform
-code-review-graph uninstall --dry-run  # Preview safe removal of installed artifacts
-code-review-graph build            # Parse entire codebase
-code-review-graph update           # Incremental update (changed files only)
-code-review-graph status           # Graph statistics
-code-review-graph watch            # Auto-update on file changes
-code-review-graph visualize        # Generate interactive HTML graph
-code-review-graph visualize --format json      # Export local graph data as JSON
-code-review-graph visualize --format graphml   # Export as GraphML
-code-review-graph visualize --format svg       # Export as SVG
-code-review-graph visualize --format obsidian  # Export as Obsidian vault
-code-review-graph visualize --format cypher    # Export as Neo4j Cypher
-code-review-graph wiki             # Generate markdown wiki from communities
-code-review-graph detect-changes --brief         # Risk panel + token savings (read-only)
-code-review-graph update --brief                 # Refresh graph + same panel
-code-review-graph detect-changes --brief --verify  # Cross-check vs tiktoken
-code-review-graph register <path>  # Register repo in multi-repo registry
-code-review-graph unregister <id>  # Remove repo from registry
-code-review-graph repos            # List registered repositories
-code-review-graph daemon start     # Start multi-repo watch daemon
-code-review-graph daemon stop      # Stop the daemon
-code-review-graph daemon status    # Show daemon status and repos
-code-review-graph eval             # Run evaluation benchmarks
-code-review-graph serve            # Start MCP server
+code-review-graph install          # 自动检测并配置所有平台
+code-review-graph install --platform <name>  # 指定特定平台
+code-review-graph build            # 解析整个代码库
+code-review-graph update           # 增量更新（仅变更文件）
+code-review-graph status           # 图统计信息
+code-review-graph watch            # 文件变更时自动更新
+code-review-graph visualize        # 生成交互式 HTML 图
+code-review-graph visualize --format graphml   # 导出为 GraphML
+code-review-graph visualize --format svg       # 导出为 SVG
+code-review-graph visualize --format obsidian  # 导出为 Obsidian 知识库
+code-review-graph visualize --format cypher    # 导出为 Neo4j Cypher
+code-review-graph wiki             # 从社区结构生成 Markdown Wiki
+code-review-graph detect-changes   # 风险评分的变更影响分析
+code-review-graph register <path>  # 将仓库注册到多仓库注册表
+code-review-graph unregister <id>  # 从注册表移除仓库
+code-review-graph repos            # 列出已注册的仓库
+code-review-graph eval             # 运行评估基准测试
+code-review-graph serve            # 启动 MCP 服务器
 ```
-
-JSON exports stay inside the local graph data directory, which Git ignores by
-default. They can contain absolute paths and code-structure metadata, so inspect
-and sanitize an export before publishing it outside your machine.
 
 </details>
 
 <details>
-<summary><strong>Token Savings panel: <code>detect-changes --brief</code> vs <code>update --brief</code></strong></summary>
+<summary><strong>30 个 MCP 工具</strong></summary>
 <br>
 
-Both commands print the same compact panel showing how many tokens the
-graph saved you compared to handing the changed files to an agent raw.
-They differ in **one** thing: whether the graph gets refreshed first.
+图构建完成后，AI 助手会自动使用这些工具。
 
-```text
-┌─────────────────────── Token Savings ────────────────────────┐
-│ Full context would be:     12,921 tokens                     │
-│ Graph context used:           762 tokens                     │
-│ Saved:                     12,159 tokens (~94%)              │
-│ Breakdown: Functions 244 · Tests 191 · Risk 244 · Other 83   │
-└──────────────────────────────────────────────────────────────┘
-```
+| 工具 | 说明 |
+|------|------|
+| `build_or_update_graph_tool` | 构建或增量更新图 |
+| `run_postprocess_tool` | 重新运行执行流、社区和全文索引后处理 |
+| `get_minimal_context_tool` | 超紧凑上下文（约 100 tokens）——首先调用此工具 |
+| `get_impact_radius_tool` | 变更文件的影响半径 |
+| `get_review_context_tool` | Token 优化的审查上下文，附带结构摘要 |
+| `query_graph_tool` | 查询调用者、被调用者、测试、导入、继承关系 |
+| `traverse_graph_tool` | 从任意节点进行 BFS/DFS 遍历，可设置 token 预算 |
+| `semantic_search_nodes_tool` | 按名称或语义搜索代码实体 |
+| `embed_graph_tool` | 计算向量嵌入以支持语义搜索 |
+| `list_graph_stats_tool` | 图的规模和健康状态 |
+| `get_docs_section_tool` | 获取文档章节 |
+| `find_large_functions_tool` | 查找超过行数阈值的函数/类 |
+| `list_flows_tool` | 列出按关键度排序的执行流 |
+| `get_flow_tool` | 获取单个执行流的详情 |
+| `get_affected_flows_tool` | 查找受变更文件影响的执行流 |
+| `list_communities_tool` | 列出检测到的代码社区 |
+| `get_community_tool` | 获取单个社区的详情 |
+| `get_architecture_overview_tool` | 基于社区结构的架构概览 |
+| `detect_changes_tool` | 面向代码审查的风险评分变更影响分析 |
+| `get_hub_nodes_tool` | 查找连接最多的节点（架构热点） |
+| `get_bridge_nodes_tool` | 通过介数中心性查找架构瓶颈 |
+| `get_knowledge_gaps_tool` | 识别结构性弱点和未测试热点 |
+| `get_surprising_connections_tool` | 检测意外的跨社区耦合 |
+| `get_suggested_questions_tool` | 基于分析自动生成审查问题 |
+| `refactor_tool` | 重命名预览、死代码检测、重构建议 |
+| `apply_refactor_tool` | 应用先前预览的重构 |
+| `generate_wiki_tool` | 从社区结构生成 Markdown Wiki |
+| `get_wiki_page_tool` | 获取特定 Wiki 页面 |
+| `list_repos_tool` | 列出已注册的仓库 |
+| `cross_repo_search_tool` | 跨所有注册仓库搜索 |
 
-| Command | What it does | When to use |
-|---|---|---|
-| `detect-changes --brief` | **Read-only.** Looks at your current changes, queries the **existing** graph, prints the panel. ~1 sec. | Most of the time — the hooks (or `crg-daemon`) keep the graph fresh in the background, so this is enough. |
-| `update --brief` | **Re-parses your changed files into the graph first**, then prints the same panel. ~5 sec. | After a rebase, a large change set, or any time you suspect the graph is stale. |
-
-Both end with the **same panel** because both call the same `analyze_changes()` step at the end. The difference is whether the graph itself got refreshed before that analysis ran.
-
-Add `--verify` to either command to cross-check the displayed numbers against OpenAI's `cl100k_base` tokenizer (the GPT-4 family). Requires `pip install tiktoken`. The estimate stays within ~1% of real tokens on a typical change set — see [`docs/REPRODUCING.md`](docs/REPRODUCING.md) for the calibration data.
-
-The same `context_savings` metadata is also attached automatically to the JSON responses of `get_impact_radius`, `get_review_context`, `detect_changes`, and `get_architecture_overview` MCP tools, so AI agents can surface the savings to humans in chat without any extra prompting.
+**MCP 提示模板**（5 种工作流模板）：
+`review_changes`、`architecture_map`、`debug_issue`、`onboard_developer`、`pre_merge_check`
 
 </details>
 
 <details>
-<summary><strong>Multi-repo daemon</strong></summary>
+<summary><strong>配置</strong></summary>
 <br>
 
-If your editor doesn't support hooks (e.g. Cursor, OpenCode), or you just want your
-graph to stay fresh in the background without any editor integration, the daemon is
-for you. It watches your repos for file changes and automatically rebuilds the graph
-— no manual `build` or `update` commands needed.
-
-The daemon is included with `code-review-graph` — no separate install required.
-
-**Quick setup:**
-
-```bash
-# 1. Register the repos you want to watch
-crg-daemon add ~/project-a --alias proj-a
-crg-daemon add ~/project-b
-
-# 2. Start the daemon (runs in the background)
-crg-daemon start
-
-# 3. That's it — graphs stay up to date automatically
-crg-daemon status                 # check daemon and per-repo watcher status
-crg-daemon logs --repo proj-a -f  # tail logs for a specific repo
-crg-daemon stop                   # stop daemon and all watcher processes
-```
-
-Also available as `code-review-graph daemon start|stop|status|...`.
-
-Under the hood, `crg-daemon add` writes to a TOML config file at
-`~/.code-review-graph/watch.toml`. You can also edit this file directly:
-
-```toml
-[[repos]]
-path = "/home/user/project-a"
-alias = "proj-a"
-
-[[repos]]
-path = "/home/user/project-b"
-alias = "project-b"
-```
-
-The daemon monitors this config file for changes and automatically starts/stops
-watcher processes as repos are added or removed. Health checks every 30 seconds
-restart dead watchers. No external dependencies required.
-
-See [docs/COMMANDS.md](docs/COMMANDS.md#standalone-daemon-cli-crg-daemon) for the
-full config reference and all available options.
-
-</details>
-
-<details>
-<summary><strong>30 MCP tools</strong></summary>
-<br>
-
-Your AI assistant uses these automatically once the graph is built.
-
-| Tool | Description |
-|------|-------------|
-| `build_or_update_graph_tool` | Build or incrementally update the graph |
-| `run_postprocess_tool` | Re-run flow detection, community detection, and FTS indexing |
-| `get_minimal_context_tool` | Ultra-compact context (~100 tokens) — call this first |
-| `get_impact_radius_tool` | Blast radius of changed files |
-| `get_review_context_tool` | Token-optimised review context with structural summary |
-| `query_graph_tool` | Callers, callees, tests, imports, inheritance queries |
-| `traverse_graph_tool` | BFS/DFS traversal from any node with token budget |
-| `semantic_search_nodes_tool` | Search code entities by name or meaning |
-| `embed_graph_tool` | Compute vector embeddings for semantic search |
-| `list_graph_stats_tool` | Graph size and health |
-| `get_docs_section_tool` | Retrieve documentation sections |
-| `find_large_functions_tool` | Find functions/classes exceeding a line-count threshold |
-| `list_flows_tool` | List execution flows sorted by criticality |
-| `get_flow_tool` | Get details of a single execution flow |
-| `get_affected_flows_tool` | Find flows affected by changed files |
-| `list_communities_tool` | List detected code communities |
-| `get_community_tool` | Get details of a single community |
-| `get_architecture_overview_tool` | Architecture overview from community structure |
-| `detect_changes_tool` | Risk-scored change impact analysis for code review |
-| `get_hub_nodes_tool` | Find most-connected nodes (architectural hotspots) |
-| `get_bridge_nodes_tool` | Find chokepoints via betweenness centrality |
-| `get_knowledge_gaps_tool` | Identify structural weaknesses and untested hotspots |
-| `get_surprising_connections_tool` | Detect unexpected cross-community coupling |
-| `get_suggested_questions_tool` | Auto-generated review questions from analysis |
-| `refactor_tool` | Rename preview, dead code detection, suggestions |
-| `apply_refactor_tool` | Apply a previously previewed refactoring |
-| `generate_wiki_tool` | Generate markdown wiki from communities |
-| `get_wiki_page_tool` | Retrieve a specific wiki page |
-| `list_repos_tool` | List registered repositories |
-| `cross_repo_search_tool` | Search across all registered repositories |
-
-**MCP Prompts** (5 workflow templates):
-`review_changes`, `architecture_map`, `debug_issue`, `onboard_developer`, `pre_merge_check`
-
-</details>
-
-<details>
-<summary><strong>Configuration</strong></summary>
-<br>
-
-To exclude paths from indexing, create a `.code-review-graphignore` file in your repository root:
+要排除特定路径不被索引，请在仓库根目录创建 `.code-review-graphignore` 文件：
 
 ```
 generated/**
@@ -518,199 +271,39 @@ vendor/**
 node_modules/**
 ```
 
-Note: in git repos, only tracked files are indexed (`git ls-files`), so gitignored files are skipped automatically. Use `.code-review-graphignore` to exclude tracked files or when git isn't available.
+注意：在 git 仓库中，仅索引已跟踪的文件（`git ls-files`），因此 gitignore 中的文件会自动跳过。`.code-review-graphignore` 用于排除已跟踪的文件，或在没有 git 的环境中使用。
 
-Optional dependency groups:
+可选依赖组：
 
 ```bash
-pip install "code-review-graph[embeddings]"          # Local vector embeddings (sentence-transformers)
-pip install "code-review-graph[google-embeddings]"   # Google Gemini embeddings
-pip install "code-review-graph[communities]"         # Community detection (igraph)
-pip install "code-review-graph[enrichment]"          # Python call-resolution enrichment (Jedi)
-pip install "code-review-graph[eval]"                # Evaluation benchmarks (matplotlib)
-pip install "code-review-graph[wiki]"                # Wiki generation with LLM summaries (ollama)
-pip install "code-review-graph[all]"                 # All optional dependencies
+pip install "code-review-graph[embeddings]"          # 本地向量嵌入 (sentence-transformers)
+pip install "code-review-graph[google-embeddings]"   # Google Gemini 嵌入
+pip install "code-review-graph[communities]"         # 社区检测 (igraph)
+pip install "code-review-graph[enrichment]"          # Python 调用解析增强 (Jedi)
+pip install "code-review-graph[eval]"                # 评估基准测试 (matplotlib)
+pip install "code-review-graph[wiki]"                # 使用 LLM 摘要生成 Wiki (ollama)
+pip install "code-review-graph[all]"                 # 所有可选依赖
 ```
 
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `CRG_GIT_TIMEOUT` | Timeout in seconds for Git operations | `30` |
-| `CRG_DATA_DIR` | Override directory for graph databases and generated graph artefacts | - |
-| `CRG_EMBEDDING_MODEL` | Default model for vector embeddings | `all-MiniLM-L6-v2` |
-| `CRG_ACCEPT_CLOUD_EMBEDDINGS` | Suppress the cloud embedding egress warning after explicit acknowledgement | - |
-| `CRG_ALLOW_REMOTE_CODE` | Allow HuggingFace models that require `trust_remote_code=True` | `0` |
-| `CRG_MAX_IMPACT_NODES` | Maximum nodes to include in impact analysis | `500` |
-| `CRG_MAX_IMPACT_DEPTH` | Search depth for blast-radius analysis | `2` |
-| `CRG_MAX_BFS_DEPTH` | Maximum depth for graph traversal | `15` |
-| `CRG_MAX_CHANGED_FUNCS` | Maximum changed functions analysed in one change report | `500` |
-| `CRG_MAX_TRANSITIVE_FRONTIER` | Maximum frontier size for transitive caller/callee expansion | `50` |
-| `CRG_TOOL_TIMEOUT` | Optional timeout in seconds for bounded MCP tools (`0` disables timeout) | `0` |
-| `CRG_RECURSE_SUBMODULES` | Include git submodules in file collection when set to `1`, `true`, or `yes` | - |
-| `CRG_TOOLS` | Comma-separated allowlist of MCP tools to expose when serving | - |
-| `GOOGLE_API_KEY` | API key for Google Gemini embeddings | - |
-| `MINIMAX_API_KEY` | API key for MiniMax embeddings | - |
-| `VOYAGE_API_KEY` | API key for Voyage embeddings | - |
-| `CRG_VOYAGE_MODEL` | Model name for Voyage embeddings | `voyage-code-3` |
-| `CRG_VOYAGE_OUTPUT_DIMENSION` | Output dimension for Voyage embeddings | `1024` |
-| `CRG_VOYAGE_OUTPUT_DTYPE` | Output dtype for Voyage embeddings | `float` |
-| `CRG_VOYAGE_BASE_URL` | Voyage embeddings endpoint | `https://api.voyageai.com/v1` |
-| `CRG_VOYAGE_BATCH_SIZE` | Batch size for Voyage embedding requests | `100` |
-| `CRG_VOYAGE_MIN_INTERVAL_SEC` | Minimum delay between Voyage requests | `0` |
-| `CRG_OPENAI_BASE_URL` | OpenAI-compatible embeddings endpoint | - |
-| `CRG_OPENAI_API_KEY` | API key for OpenAI-compatible embeddings | - |
-| `CRG_OPENAI_MODEL` | Model name for OpenAI-compatible embeddings | - |
-| `CRG_OPENAI_DIMENSION` | Pin embedding dimension (v3 models support reduction) | - |
-| `NO_COLOR` | If set, disables ANSI colors in terminal | - |
-| `CRG_SERIAL_PARSE` | If `1`, disables parallel parsing (use for debugging) | - |
-
-OpenAI-compatible embeddings (real OpenAI, Azure, or any self-hosted gateway like
-new-api / LiteLLM / vLLM / LocalAI / Ollama in openai mode) need no extra install —
-just set the environment variables and pass `provider="openai"` to `embed_graph`:
+OpenAI 兼容嵌入（真实 OpenAI、Azure，或自建网关如 new-api / LiteLLM / vLLM / LocalAI / Ollama openai 模式）无需额外安装 —— 只需设置环境变量并在 `embed_graph` 中传入 `provider="openai"`：
 
 ```bash
-export CRG_OPENAI_BASE_URL=http://127.0.0.1:3000/v1     # or https://api.openai.com/v1
+export CRG_OPENAI_BASE_URL=http://127.0.0.1:3000/v1     # 或 https://api.openai.com/v1
 export CRG_OPENAI_API_KEY=sk-...
-export CRG_OPENAI_MODEL=text-embedding-3-small          # whatever your gateway serves
-# optional:
-export CRG_OPENAI_DIMENSION=1536                        # pin dim (v3 models support reduction)
-export CRG_OPENAI_BATCH_SIZE=100                        # lower for gateways with tight limits
-                                                        # (e.g. Qwen text-embedding-v4 caps at 10)
+export CRG_OPENAI_MODEL=text-embedding-3-small          # 取决于你网关提供的模型
+# 可选：
+export CRG_OPENAI_DIMENSION=1536                        # 固定维度（v3 模型支持维度缩减）
+export CRG_OPENAI_BATCH_SIZE=100                        # 某些网关有更严格的批次限制时下调
+                                                        # （如 Qwen text-embedding-v4 上限为 10）
 ```
 
-The cloud-egress warning is auto-skipped when the base URL points to localhost
-(`127.0.0.1`, `localhost`, `0.0.0.0`, `::1`).
+当 base URL 指向 localhost（`127.0.0.1`、`localhost`、`0.0.0.0`、`::1`）时，会自动跳过云出口警告。
 
-Voyage embeddings need no extra install. Set `VOYAGE_API_KEY` and pass
-`provider="voyage"` to `embed_graph`; the default model is `voyage-code-3`:
-
-```bash
-export VOYAGE_API_KEY=pa-...
-export CRG_ACCEPT_CLOUD_EMBEDDINGS=1
-code-review-graph embed --provider voyage --model voyage-code-3
-```
-
-> **Model selection tip.** Avoid `-preview` / `-beta` / `-exp` model IDs
-> (e.g. `google/gemini-embedding-2-preview`) for anything you plan to keep
-> long-term — preview models can change weights (different dimension → full
-> re-embed required) or be deprecated without notice. Prefer stable GA
-> releases such as `text-embedding-3-small` / `text-embedding-3-large` (OpenAI),
-> `Qwen/Qwen3-Embedding-8B` (via self-hosted vLLM / LocalAI), or
-> `gemini-embedding-001` (via the native Gemini provider, which requires
-> `GOOGLE_API_KEY` instead of the OpenAI-compatible path).
+> **模型选择提示。** 避免用 `-preview` / `-beta` / `-exp` 结尾的 model ID（例如 `google/gemini-embedding-2-preview`）做长期使用——preview 模型可能更换权重（维度一变就要全量 re-embed）或被无预警下架。建议改用正式 GA 模型：`text-embedding-3-small` / `text-embedding-3-large`（OpenAI）、`Qwen/Qwen3-Embedding-8B`（经 vLLM / LocalAI 自宿主）、或 `gemini-embedding-001`（经原生 Gemini provider，需要 `GOOGLE_API_KEY`）。
 >
-> `code-review-graph` embeds identifiers, signatures, structural context, and a
-> bounded first-paragraph docstring/doc-comment summary. It does not transmit
-> function bodies. Graphs created before documentation extraction was added
-> need one full `code-review-graph build` before re-embedding so every file is
-> reparsed. Routine builds never refresh embeddings by default. To refresh an
-> existing index after a build, explicitly pass both `--embedding-provider`
-> and `--embedding-model`; cloud choices may transmit this source-derived text
-> and incur API cost.
-
-#### Tool Filtering
-
-CRG exposes 30 MCP tools by default. In token-constrained environments, you can
-limit the server to a subset of tools using `--tools` or the `CRG_TOOLS`
-environment variable:
-
-```bash
-# Via CLI flag
-code-review-graph serve --tools query_graph_tool,semantic_search_nodes_tool,detect_changes_tool
-
-# Via environment variable
-CRG_TOOLS=query_graph_tool,semantic_search_nodes_tool code-review-graph serve
-```
-
-The CLI flag takes precedence over the environment variable. When neither is set,
-all tools are available. This is especially useful for MCP client configurations:
-
-```json
-{
-  "mcpServers": {
-    "code-review-graph": {
-      "command": "code-review-graph",
-      "args": ["serve", "--tools", "query_graph_tool,semantic_search_nodes_tool,detect_changes_tool,get_review_context_tool"]
-    }
-  }
-}
-```
+> 另外请注意：目前 `code-review-graph` 只嵌入**函数签名**（每节点约 10 tokens，例如 `"parse_file function (path: str) returns Tree"`）。那些靠长 context 理解函数 body 来拉开差距的模型（Gemini 2 或 Qwen3-8B 在 MTEB-code 的 SOTA 分数）在这个输入长度下跟小模型的品质差距会小很多。Body / docstring 嵌入已列为后续增强任务。
 
 </details>
 
 ---
 
-## FAQ & how it compares
-
-Short, honest answers in [docs/FAQ.md](docs/FAQ.md):
-
-- [vs LSP / language servers](docs/FAQ.md#how-is-this-different-from-lsp-and-language-servers) — one persistent cross-language graph instead of per-language daemons; LSP stays more precise per symbol.
-- [vs RAG / embeddings](docs/FAQ.md#isnt-this-just-rag) — structural edges parsed from the AST, not similarity chunks; embeddings are optional and only assist search.
-- [vs grep / agentic search](docs/FAQ.md#why-not-just-grep) — grep wins on one-hop lookups; the graph wins on multi-hop questions (impact radius, callers-of-callers, tests-for, affected flows).
-- [vs Serena, codegraph, claude-context, repomix](docs/FAQ.md#how-does-it-compare-to-serena-codegraph-claude-context-and-repomix) — factual comparison table.
-- [When NOT to use it](docs/FAQ.md#when-should-i-not-use-it) — small repos, trivial single-file diffs, one-off questions.
-- [Does it phone home?](docs/FAQ.md#does-it-phone-home) — no; zero telemetry, cloud embeddings are opt-in.
-- [How do I verify it is working?](docs/FAQ.md#how-do-i-verify-it-is-working) — `status`, `detect-changes --brief`, `/mcp`.
-
-## Troubleshooting
-
-### `pip` / `pipx` cannot download `hatchling` (or `Errno 9` / `Bad file descriptor` to PyPI)
-
-Installing from a **source tree** (for example `pipx install .`) needs build dependencies from **PyPI** (for example `hatchling`). If you see `Could not find a version that satisfies the requirement hatchling` after connection warnings, the Python/pip in that **terminal** may not be able to open an HTTPS client to `pypi.org` (sometimes seen in an integrated editor terminal; less often system-wide with VPN, firewall, or proxy).
-
-**Options:**
-
-1. Run the same command from **macOS Terminal.app** (or iTerm) instead of the IDE’s terminal, then retry `pipx install .` or `pipx install "git+https://..."` .
-2. Use **[uv](https://docs.astral.sh/uv/)** to install the CLI from a checkout (uses different download machinery than `pip` in many cases):
-
-   ```bash
-   cd /path/to/code-review-graph
-   uv tool install . --force
-   ```
-
-3. For **development in a clone** without a global install, use `uv sync` and `uv run code-review-graph …` (or activate `.venv` after `uv sync`).
-
-**Diagnose (optional):** `python3 scripts/diagnose_pypi_connectivity.py` — if it prints `FAILED`, the issue is environment/network, not a wrong package name in this repo.
-
-### Windows Configuration Issues (Invalid JSON / Connection Closed)
-If you are using Windows and encounter `Invalid JSON: EOF while parsing` or `MCP error -32000: Connection closed` when connecting via Claude Code, do not use the `cmd /c` wrapper in your config.
-
-Ensure `fastmcp` is updated to at least `3.2.4+`. Then, configure your `~/.claude.json` to execute the `.exe` directly and pass the UTF-8 environment variable via the config:
-
-```json
-"code-review-graph": {
-  "command": "C:\\path\\to\\your\\venv\\Scripts\\code-review-graph.exe",
-  "args": ["serve", "--repo", "C:\\path\\to\\your\\project"],
-  "env": { "PYTHONUTF8": "1" }
-}
-```
-
-## Contributing
-
-```bash
-git clone https://github.com/tirth8205/code-review-graph.git
-cd code-review-graph
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-pytest
-```
-
-<details>
-<summary><strong>Adding a new language</strong></summary>
-<br>
-
-Edit `code_review_graph/parser.py` and add your extension to `EXTENSION_TO_LANGUAGE` along with node type mappings in `_CLASS_TYPES`, `_FUNCTION_TYPES`, `_IMPORT_TYPES`, and `_CALL_TYPES`. Include a test fixture and open a PR.
-
-</details>
-
-## Licence
-
-MIT. See [LICENSE](LICENSE).
-
-<p align="center">
-<br>
-<a href="https://code-review-graph.com">code-review-graph.com</a><br><br>
-<code>pip install code-review-graph && code-review-graph install</code><br>
-<sub>Works with Codex, Claude Code, CodeBuddy Code, Cursor, Windsurf, Zed, Continue, OpenCode, Antigravity, Gemini CLI, Qwen, Qoder, Kiro, GitHub Copilot, and GitHub Copilot CLI</sub>
-</p>
