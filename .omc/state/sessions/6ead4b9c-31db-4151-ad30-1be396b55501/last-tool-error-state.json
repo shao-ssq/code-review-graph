@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd /home/ml47/alexlin/dev/desktop-enablement/terminal-bridge-kit && uv run code-review-graph visualize 2>&1 | head -50\",\"description\":\"Run code-review-graph visualize command\"}",
-  "error": "Exit code 1\n/usr/bin/bash: line 1: cd: /home/ml47/alexlin/dev/desktop-enablement/terminal-bridge-kit: No such file or directory",
-  "timestamp": "2026-08-06T11:55:19.893Z",
-  "retry_count": 1
-}

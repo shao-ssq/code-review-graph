@@ -43,6 +43,9 @@ code-review-graph-vscode/dist/
 .claude/
 .claude-plugin/
 
+# OMC (oh-my-claudecode) local state
+.omc/
+
 # Qoder
 .qoder/
 QODER.md

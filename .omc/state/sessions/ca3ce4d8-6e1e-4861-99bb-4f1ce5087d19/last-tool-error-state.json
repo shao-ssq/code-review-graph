@@ -1,7 +1,0 @@
-{
-  "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"ls -la /mnt/c/Users/shaoqisun/Desktop/code-review-graph/diagrams/\",\"description\":\"List diagrams directory contents\"}",
-  "error": "Exit code 2\nls: cannot access '/mnt/c/Users/shaoqisun/Desktop/code-review-graph/diagrams/': No such file or directory",
-  "timestamp": "2026-08-06T07:02:46.135Z",
-  "retry_count": 1
-}
