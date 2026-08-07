@@ -182,6 +182,18 @@
   },
   "hotPaths": [
     {
+      "path": "code_review_graph/cli.py",
+      "accessCount": 19,
+      "lastAccessed": 1786072284983,
+      "type": "directory"
+    },
+    {
+      "path": "code_review_graph/main.py",
+      "accessCount": 7,
+      "lastAccessed": 1786069315748,
+      "type": "directory"
+    },
+    {
       "path": "pyproject.toml",
       "accessCount": 6,
       "lastAccessed": 1786016208610,
@@ -197,6 +209,12 @@
       "path": "docs/superpowers/plans/2026-07-17-julia-parser-reconciliation.md",
       "accessCount": 6,
       "lastAccessed": 1786020169554,
+      "type": "file"
+    },
+    {
+      "path": "code_review_graph/incremental.py",
+      "accessCount": 6,
+      "lastAccessed": 1786069315786,
       "type": "file"
     },
     {
@@ -218,6 +236,12 @@
       "type": "file"
     },
     {
+      "path": "docs/COMMANDS.md",
+      "accessCount": 5,
+      "lastAccessed": 1786069840218,
+      "type": "file"
+    },
+    {
       "path": "docs/schema.md",
       "accessCount": 4,
       "lastAccessed": 1786018830722,
@@ -236,21 +260,15 @@
       "type": "file"
     },
     {
-      "path": "docs/COMMANDS.md",
-      "accessCount": 4,
-      "lastAccessed": 1786019438212,
-      "type": "file"
-    },
-    {
       "path": "code_review_graph/skills.py",
-      "accessCount": 3,
-      "lastAccessed": 1786016990390,
+      "accessCount": 4,
+      "lastAccessed": 1786069290298,
       "type": "directory"
     },
     {
       "path": "docs/USAGE.md",
-      "accessCount": 3,
-      "lastAccessed": 1786018802484,
+      "accessCount": 4,
+      "lastAccessed": 1786072275813,
       "type": "file"
     },
     {
@@ -275,6 +293,18 @@
       "path": "docs/superpowers/plans/2026-07-17-php-laravel-parser.md",
       "accessCount": 3,
       "lastAccessed": 1786019880502,
+      "type": "file"
+    },
+    {
+      "path": "skills/review-delta/SKILL.md",
+      "accessCount": 3,
+      "lastAccessed": 1786070189555,
+      "type": "file"
+    },
+    {
+      "path": "skills/review-pr/SKILL.md",
+      "accessCount": 3,
+      "lastAccessed": 1786070189561,
       "type": "file"
     },
     {
@@ -320,18 +350,6 @@
       "type": "file"
     },
     {
-      "path": "skills/review-delta/SKILL.md",
-      "accessCount": 2,
-      "lastAccessed": 1786016733908,
-      "type": "file"
-    },
-    {
-      "path": "skills/review-pr/SKILL.md",
-      "accessCount": 2,
-      "lastAccessed": 1786016734473,
-      "type": "file"
-    },
-    {
       "path": "docs/INDEX.md",
       "accessCount": 2,
       "lastAccessed": 1786018613364,
@@ -356,6 +374,24 @@
       "type": "file"
     },
     {
+      "path": "code_review_graph/tools/docs.py",
+      "accessCount": 2,
+      "lastAccessed": 1786069263909,
+      "type": "file"
+    },
+    {
+      "path": "code_review_graph/graph.py",
+      "accessCount": 2,
+      "lastAccessed": 1786069290285,
+      "type": "directory"
+    },
+    {
+      "path": "code_review_graph/tools/__init__.py",
+      "accessCount": 2,
+      "lastAccessed": 1786069817768,
+      "type": "file"
+    },
+    {
       "path": "diagrams/generate_diagrams.py",
       "accessCount": 1,
       "lastAccessed": 1785999772476,
@@ -374,28 +410,76 @@
       "type": "file"
     },
     {
-      "path": "code_review_graph/cli.py",
-      "accessCount": 1,
-      "lastAccessed": 1786015742234,
-      "type": "directory"
-    },
-    {
-      "path": "code_review_graph/main.py",
-      "accessCount": 1,
-      "lastAccessed": 1786015742239,
-      "type": "directory"
-    },
-    {
       "path": "tests/test_eval.py",
       "accessCount": 1,
       "lastAccessed": 1786015745988,
       "type": "directory"
     },
     {
-      "path": "code_review_graph/tools/docs.py",
+      "path": "code_review_graph/__main__.py",
       "accessCount": 1,
-      "lastAccessed": 1786015842192,
+      "lastAccessed": 1786069226291,
       "type": "file"
+    },
+    {
+      "path": "code_review_graph/__init__.py",
+      "accessCount": 1,
+      "lastAccessed": 1786069226332,
+      "type": "file"
+    },
+    {
+      "path": "code_review_graph/tools/_common.py",
+      "accessCount": 1,
+      "lastAccessed": 1786069230682,
+      "type": "file"
+    },
+    {
+      "path": "code_review_graph/daemon_cli.py",
+      "accessCount": 1,
+      "lastAccessed": 1786069248530,
+      "type": "file"
+    },
+    {
+      "path": "code_review_graph/tools/context.py",
+      "accessCount": 1,
+      "lastAccessed": 1786069255829,
+      "type": "directory"
+    },
+    {
+      "path": "code_review_graph/tools/query.py",
+      "accessCount": 1,
+      "lastAccessed": 1786069255838,
+      "type": "directory"
+    },
+    {
+      "path": "code_review_graph/tools/review.py",
+      "accessCount": 1,
+      "lastAccessed": 1786069255842,
+      "type": "directory"
+    },
+    {
+      "path": "code_review_graph/daemon.py",
+      "accessCount": 1,
+      "lastAccessed": 1786069255863,
+      "type": "directory"
+    },
+    {
+      "path": "code_review_graph/tools/community_tools.py",
+      "accessCount": 1,
+      "lastAccessed": 1786069263878,
+      "type": "directory"
+    },
+    {
+      "path": "code_review_graph/tools/flows_tools.py",
+      "accessCount": 1,
+      "lastAccessed": 1786069263887,
+      "type": "directory"
+    },
+    {
+      "path": "code_review_graph/tools/analysis_tools.py",
+      "accessCount": 1,
+      "lastAccessed": 1786069263920,
+      "type": "directory"
     }
   ],
   "userDirectives": []

@@ -1,7 +1,5 @@
 # Code Review Graph —— 用户指南
 
-**适用版本：** v2.3.6
-
 ## 安装
 
 ```bash
