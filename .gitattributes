@@ -1,0 +1,3 @@
+# Binary assets — never convert line endings (CRLF would break SRI hashes).
+code_review_graph/assets/*.js binary
+code_review_graph/assets/* binary

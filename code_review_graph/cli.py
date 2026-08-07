@@ -1208,76 +1208,76 @@ def main() -> None:
     # daemon
     daemon_cmd = sub.add_parser(
         "daemon",
-        help="Multi-repo watch daemon (start/stop/status/add/remove)",
+        help="多仓库监听守护进程（start/stop/status/add/remove）",
     )
     daemon_sub = daemon_cmd.add_subparsers(dest="daemon_command")
 
     daemon_start = daemon_sub.add_parser(
         "start",
-        help="Start the watch daemon",
+        help="启动监听守护进程",
     )
     daemon_start.add_argument(
         "--foreground",
         action="store_true",
-        help="Run in foreground instead of daemonizing",
+        help="在前台运行，而非后台 daemonize",
     )
 
     daemon_sub.add_parser(
         "stop",
-        help="Stop the watch daemon",
+        help="停止监听守护进程",
     )
 
     daemon_restart = daemon_sub.add_parser(
         "restart",
-        help="Restart the watch daemon",
+        help="重启监听守护进程",
     )
     daemon_restart.add_argument(
         "--foreground",
         action="store_true",
-        help="Run in foreground instead of daemonizing",
+        help="在前台运行，而非后台 daemonize",
     )
 
-    daemon_sub.add_parser("status", help="Show daemon and watcher status")
+    daemon_sub.add_parser("status", help="查看守护进程与各 watcher 状态")
 
     daemon_logs = daemon_sub.add_parser(
         "logs",
-        help="View daemon or watcher logs",
+        help="查看守护进程或单个仓库的日志",
     )
     daemon_logs.add_argument(
         "--repo",
         default=None,
-        help="Show logs for a specific repo alias",
+        help="查看指定仓库（按别名）的日志",
     )
     daemon_logs.add_argument(
         "--follow",
         action="store_true",
-        help="Follow log output (tail -f)",
+        help="持续追踪日志输出（tail -f）",
     )
     daemon_logs.add_argument(
         "--lines",
         type=int,
         default=50,
-        help="Number of lines to show (default: 50)",
+        help="显示的行数（默认：50）",
     )
 
     daemon_add = daemon_sub.add_parser(
         "add",
-        help="Add a repo to the watch config",
+        help="将仓库加入监听配置",
     )
-    daemon_add.add_argument("path", help="Path to the repository")
+    daemon_add.add_argument("path", help="仓库路径")
     daemon_add.add_argument(
         "--alias",
         default=None,
-        help="Short alias for the repo",
+        help="仓库的短别名",
     )
 
     daemon_remove = daemon_sub.add_parser(
         "remove",
-        help="Remove a repo from the watch config",
+        help="将仓库从监听配置中移除",
     )
     daemon_remove.add_argument(
         "path_or_alias",
-        help="Repository path or alias to remove",
+        help="要移除的仓库路径或别名",
     )
 
     args = ap.parse_args()
@@ -1911,38 +1911,38 @@ def main() -> None:
 
                 out = data_dir / "graph.json"
                 export_json(store, out)
-                print(f"JSON exported: {out}")
+                print(f"已导出 JSON：{out}")
             elif fmt == "graphml":
                 from .exports import export_graphml
 
                 out = data_dir / "graph.graphml"
                 export_graphml(store, out)
-                print(f"GraphML exported: {out}")
+                print(f"已导出 GraphML：{out}")
             elif fmt == "cypher":
                 from .exports import export_neo4j_cypher
 
                 out = data_dir / "graph.cypher"
                 export_neo4j_cypher(store, out)
-                print(f"Neo4j Cypher exported: {out}")
+                print(f"已导出 Neo4j Cypher：{out}")
             elif fmt == "obsidian":
                 from .exports import export_obsidian_vault
 
                 out = data_dir / "obsidian"
                 export_obsidian_vault(store, out)
-                print(f"Obsidian vault exported: {out}")
+                print(f"已导出 Obsidian vault：{out}")
             elif fmt == "svg":
                 from .exports import export_svg
 
                 out = data_dir / "graph.svg"
                 export_svg(store, out)
-                print(f"SVG exported: {out}")
+                print(f"已导出 SVG：{out}")
             else:
                 from .visualization import generate_html
 
                 html_path = data_dir / "graph.html"
                 vis_mode = getattr(args, "mode", "auto") or "auto"
                 generate_html(store, html_path, mode=vis_mode)
-                print(f"Visualization ({vis_mode}): {html_path}")
+                print(f"可视化（{vis_mode}）：{html_path}")
                 if getattr(args, "serve", False):
                     import functools
                     import http.server
@@ -1953,15 +1953,15 @@ def main() -> None:
                         http.server.SimpleHTTPRequestHandler,
                         directory=str(serve_dir),
                     )
-                    print(f"Serving at http://localhost:{port}/graph.html")
-                    print("Press Ctrl+C to stop.")
+                    print(f"已在 http://localhost:{port}/graph.html 提供服务")
+                    print("按 Ctrl+C 停止。")
                     with http.server.HTTPServer(("localhost", port), http_handler) as httpd:
                         try:
                             httpd.serve_forever()
                         except KeyboardInterrupt:
-                            print("\nServer stopped.")
+                            print("\n服务器已停止。")
                 else:
-                    print("Open in browser to explore.")
+                    print("在浏览器中打开以浏览。")
 
         elif args.command == "wiki":
             from .incremental import get_data_dir

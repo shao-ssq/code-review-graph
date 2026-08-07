@@ -2,12 +2,6 @@
 
 ## 核心工作流
 
-### 1. 构建图（仅首次）
-```
-/code-review-graph:build-graph
-```
-解析整个代码库。500 个文件约需 10 秒。
-
 ### 2. 审查变更（日常使用）
 ```
 /code-review-graph:review-delta
@@ -20,18 +14,6 @@
 ```
 对分支差异进行全面的结构化审查，含影响半径分析。
 
-### 4. 监听模式（可选）
-```bash
-code-review-graph watch
-```
-在每次文件保存时自动更新图谱。无需任何手动操作。
-
-### 5. 可视化图谱（可选）
-```bash
-code-review-graph visualize
-open .code-review-graph/graph.html
-```
-交互式 D3.js 力导向图。初始状态为折叠（仅显示 File 节点）——点击文件展开其子节点。使用搜索栏过滤，点击图例中的边类型可切换可见性。
 
 ### 6. 语义搜索（可选）
 ```bash

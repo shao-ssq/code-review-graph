@@ -66,20 +66,20 @@ def _write_d3_asset(directory: Path) -> Path | None:
         asset = resources.files("code_review_graph") / "assets" / D3_LOCAL_FILENAME
         data = asset.read_bytes()
     except OSError as exc:
-        logger.warning("Bundled D3 asset unavailable (%s); page will use the CDN fallback.", exc)
+        logger.warning("打包的 D3 资源不可用（%s）；页面将改用 CDN 回退。", exc)
         return None
     digest = base64.b64encode(hashlib.sha384(data).digest()).decode()
     if f"sha384-{digest}" != D3_SRI_HASH:
         logger.error(
-            "Bundled D3 asset does not match the pinned SRI hash; refusing to write %s. "
-            "The page will use the CDN fallback.",
+            "打包的 D3 资源与固定的 SRI 哈希不匹配；拒绝写入 %s。"
+            "页面将改用 CDN 回退。",
             dest,
         )
         return None
     try:
         dest.write_bytes(data)
     except OSError as exc:
-        logger.warning("Could not write %s (%s); page will use the CDN fallback.", dest, exc)
+        logger.warning("无法写入 %s（%s）；页面将改用 CDN 回退。", dest, exc)
         return None
     return dest
 
@@ -481,8 +481,8 @@ def generate_html(
     stats = store.get_stats()
     if stats.total_nodes > 50000:
         logger.warning(
-            "Graph has %d nodes — visualization may be slow. "
-            "Consider filtering by file pattern.", stats.total_nodes,
+            "图有 %d 个节点 —— 可视化可能较慢。"
+            "建议按文件模式过滤。", stats.total_nodes,
         )
     data = export_graph_data(store)
 
@@ -498,8 +498,8 @@ def generate_html(
         )
         if effective_mode != "full":
             logger.info(
-                "auto mode: %d nodes / %d edges exceeds full-render budget "
-                "(%d nodes / %d edges) — using %s aggregation",
+                "auto 模式：%d 个节点 / %d 条边超出全量渲染预算"
+                "（%d 个节点 / %d 条边）—— 采用 %s 聚合",
                 len(data["nodes"]), len(data["edges"]),
                 max_full_nodes, max_full_edges, effective_mode,
             )

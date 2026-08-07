@@ -386,7 +386,7 @@ crg-daemon remove <path_or_alias>     # 从 watch.toml 移除仓库
 守护进程从 `~/.code-review-graph/watch.toml` 读取配置：
 
 ```toml
-session_name = "crg-watch"   # 逻辑守护进程名称
+session_name = "dr-watch"   # 逻辑守护进程名称
 log_dir = "~/.code-review-graph/logs"
 poll_interval = 2            # 配置文件轮询间隔（秒）
 

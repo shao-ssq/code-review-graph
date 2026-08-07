@@ -1602,7 +1602,7 @@ def start_watch_thread(
         target=watch,
         args=(repo_root, store),
         daemon=daemon,
-        name="crg-watch",
+        name="dr-watch",
     )
     thread.start()
     logger.info("已为 %s 启动自动监听", repo_root)

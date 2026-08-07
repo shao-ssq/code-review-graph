@@ -119,7 +119,7 @@ class WatchRepo:
 class DaemonConfig:
     """Top-level daemon configuration."""
 
-    session_name: str = "crg-watch"
+    session_name: str = "dr-watch"
     """Logical daemon name (used in log messages and status output)."""
 
     log_dir: Path = field(default_factory=default_log_dir)
@@ -166,7 +166,7 @@ def load_config(path: Path | None = None) -> DaemonConfig:
 
     # -- [daemon] section ---------------------------------------------------
     daemon_section: dict[str, Any] = raw.get("daemon", {})
-    session_name: str = daemon_section.get("session_name", "crg-watch")
+    session_name: str = daemon_section.get("session_name", "dr-watch")
     log_dir = Path(daemon_section.get("log_dir", str(DaemonConfig().log_dir)))
     poll_interval: int = int(daemon_section.get("poll_interval", 2))
 
@@ -315,7 +315,7 @@ def add_repo_to_config(
     resolved = Path(repo_path).expanduser().resolve()
 
     if not resolved.is_dir():
-        raise ValueError(f"Not a directory: {resolved}")
+        raise ValueError(f"不是目录：{resolved}")
 
     has_repo_marker = (
         (resolved / ".git").exists()
@@ -323,7 +323,7 @@ def add_repo_to_config(
         or (resolved / ".code-review-graph").exists()
     )
     if not has_repo_marker:
-        raise ValueError(f"No .git, .svn, or .code-review-graph directory in {resolved}")
+        raise ValueError(f"{resolved} 中没有 .git、.svn 或 .code-review-graph 目录")
 
     effective_alias = alias or resolved.name
 
@@ -335,7 +335,7 @@ def add_repo_to_config(
             logger.warning("仓库 %s 已配置 —— 跳过", resolved)
             return config
         if existing.alias == effective_alias:
-            raise ValueError(f"Alias '{effective_alias}' is already in use by {existing.path}")
+            raise ValueError(f"别名 '{effective_alias}' 已被 {existing.path} 占用")
 
     config.repos.append(WatchRepo(path=str(resolved), alias=effective_alias))
     save_config(config, config_path)
