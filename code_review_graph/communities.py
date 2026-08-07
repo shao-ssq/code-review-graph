@@ -374,7 +374,7 @@ def _detect_leiden(
     if not qn_to_idx:
         return []
 
-    logger.info("Building igraph with %d nodes...", len(qn_to_idx))
+    logger.info("正在构建 igraph（%d 个节点）……", len(qn_to_idx))
 
     g = ig.Graph(n=len(qn_to_idx), directed=False)
     edge_list: list[tuple[int, int]] = []
@@ -405,7 +405,7 @@ def _detect_leiden(
     resolution = max(0.05, 1.0 / math.log10(max(n_nodes, 10)))
 
     logger.info(
-        "Running Leiden on %d nodes, %d edges...",
+        "正在 %d 个节点、%d 条边上运行 Leiden……",
         g.vcount(), g.ecount(),
     )
 
@@ -422,7 +422,7 @@ def _detect_leiden(
     )
 
     logger.info(
-        "Leiden complete, found %d partitions. Computing cohesion...",
+        "Leiden 完成，发现 %d 个分区。正在计算内聚度……",
         len(partition),
     )
 
@@ -462,7 +462,7 @@ def _detect_leiden(
             "member_qns": member_qns,
         })
 
-    logger.info("Community detection complete: %d communities", len(communities))
+    logger.info("社区检测完成：%d 个社区", len(communities))
     return communities
 
 
@@ -711,8 +711,8 @@ def _split_oversized(
                 next_id += 1
 
             logger.info(
-                "Split oversized community '%s' "
-                "(%d members) into %d",
+                "已将过大的社区 '%s' "
+                "（%d 个成员）拆分为 %d 个",
                 comm_name,
                 len(members),
                 len(sub_communities),
@@ -819,15 +819,15 @@ def detect_communities(
     adj = _build_adjacency(all_edges)
 
     logger.info(
-        "Loaded %d unique nodes, %d edges",
+        "已加载 %d 个唯一节点，%d 条边",
         len(unique_nodes), len(all_edges),
     )
 
     if IGRAPH_AVAILABLE:
-        logger.info("Detecting communities with Leiden algorithm (igraph)")
+        logger.info("使用 Leiden 算法检测社区（igraph）")
         results = _detect_leiden(unique_nodes, all_edges, min_size, adj=adj)
     else:
-        logger.info("igraph not available, using file-based community detection")
+        logger.info("igraph 不可用，改用基于文件的社区检测")
         results = _detect_file_based(unique_nodes, all_edges, min_size, adj=adj)
 
     # Split oversized communities

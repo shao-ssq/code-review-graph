@@ -111,7 +111,7 @@ def resolve_spring_events(store: GraphStore) -> dict[str, int]:
 
     store.commit()
     logger.info(
-        "Spring event resolver: indexed %d events and emitted %d CALLS edges",
+        "Spring 事件解析器：已索引 %d 个事件，发出 %d 条 CALLS 边",
         len(event_types),
         emitted,
     )

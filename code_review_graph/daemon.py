@@ -158,7 +158,7 @@ def load_config(path: Path | None = None) -> DaemonConfig:
     config_path = path or default_config_path()
 
     if not config_path.exists():
-        logger.info("Config file not found at %s — using defaults", config_path)
+        logger.info("未在 %s 找到配置文件 —— 使用默认值", config_path)
         return DaemonConfig()
 
     with open(config_path, "rb") as fh:
@@ -177,13 +177,13 @@ def load_config(path: Path | None = None) -> DaemonConfig:
     for entry in raw.get("repos", []):
         repo_path_str: str = entry.get("path", "")
         if not repo_path_str:
-            logger.warning("Skipping repo entry with empty path")
+            logger.warning("跳过路径为空的仓库条目")
             continue
 
         repo_path = Path(repo_path_str).expanduser().resolve()
 
         if not repo_path.is_dir():
-            logger.warning("Skipping repo %s — directory does not exist", repo_path)
+            logger.warning("跳过仓库 %s —— 目录不存在", repo_path)
             continue
 
         has_repo_marker = (
@@ -193,7 +193,7 @@ def load_config(path: Path | None = None) -> DaemonConfig:
         )
         if not has_repo_marker:
             logger.warning(
-                "Skipping repo %s — no .git, .svn, or .code-review-graph directory found",
+                "跳过仓库 %s —— 未找到 .git、.svn 或 .code-review-graph 目录",
                 repo_path,
             )
             continue
@@ -201,7 +201,7 @@ def load_config(path: Path | None = None) -> DaemonConfig:
         alias: str = entry.get("alias", "") or repo_path.name
 
         if alias in seen_aliases:
-            logger.warning("Skipping duplicate alias '%s' for repo %s", alias, repo_path)
+            logger.warning("跳过仓库 %s 的重复别名 '%s'", repo_path, alias)
             continue
 
         seen_aliases.add(alias)
@@ -286,7 +286,7 @@ def save_config(config: DaemonConfig, path: Path | None = None) -> None:
     config_path = path or default_config_path()
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(_serialize_toml(config), encoding="utf-8")
-    logger.info("Config saved to %s", config_path)
+    logger.info("配置已保存到 %s", config_path)
 
 
 # ---------------------------------------------------------------------------
@@ -332,7 +332,7 @@ def add_repo_to_config(
     # Check for duplicate path or alias
     for existing in config.repos:
         if existing.path == str(resolved):
-            logger.warning("Repo %s is already configured — skipping", resolved)
+            logger.warning("仓库 %s 已配置 —— 跳过", resolved)
             return config
         if existing.alias == effective_alias:
             raise ValueError(f"Alias '{effective_alias}' is already in use by {existing.path}")
@@ -363,7 +363,7 @@ def remove_repo_from_config(
 
     if len(config.repos) == original_count:
         logger.warning(
-            "No repo matching '%s' found in config — nothing removed",
+            "配置中未找到匹配 '%s' 的仓库 —— 无内容移除",
             path_or_alias,
         )
     else:
@@ -574,13 +574,13 @@ class ConfigWatcher:
             self._observer.daemon = True
             self._observer.start()
             logger.info(
-                "Config watcher started (watchdog) for %s",
+                "已启动配置文件监听（watchdog）：%s",
                 self._config_path,
             )
         except ImportError:
             # Fallback to polling when watchdog is unavailable
             logger.info(
-                "watchdog not available — falling back to polling for %s",
+                "watchdog 不可用 —— 改为轮询 %s",
                 self._config_path,
             )
             self._start_polling()
@@ -629,7 +629,7 @@ class ConfigWatcher:
 
     def _on_config_changed(self) -> None:
         """Handle a detected config file modification."""
-        logger.info("Config file changed, triggering reconciliation")
+        logger.info("配置文件已变更，触发重新协调")
         try:
             self._callback()
         except Exception:
@@ -670,7 +670,7 @@ class WatchDaemon:
 
     def start(self) -> None:
         """Spawn a watcher child process for each configured repo."""
-        logger.info("Starting daemon '%s'", self._config.session_name)
+        logger.info("正在启动守护进程 '%s'", self._config.session_name)
 
         # Auto-register repos in the central registry
         from .registry import Registry
@@ -701,7 +701,7 @@ class WatchDaemon:
         # Start health checker to auto-restart dead watchers
         self.start_health_checker()
 
-        msg = f"Daemon started — watching {len(self._config.repos)} repo(s)"
+        msg = f"守护进程已启动 —— 正在监听 {len(self._config.repos)} 个仓库"
         logger.info(msg)
         print(msg)  # noqa: T201
 
@@ -718,7 +718,7 @@ class WatchDaemon:
         self._current_repos.clear()
         self._clear_state()
         clear_pid()
-        logger.info("Daemon stopped")
+        logger.info("守护进程已停止")
 
     def reconcile(self, new_config: DaemonConfig | None = None) -> None:
         """Reconcile running watchers with the (possibly updated) config.
@@ -786,7 +786,7 @@ class WatchDaemon:
         self._save_state()
 
         logger.info(
-            "Reconcile complete — added: %d, removed: %d, updated: %d",
+            "重新协调完成 —— 新增：%d，移除：%d，更新：%d",
             len(to_add),
             len(to_remove),
             len(to_update),
@@ -855,7 +855,7 @@ class WatchDaemon:
             new_config = load_config(self._config_path)
         except Exception:
             logger.warning(
-                "Failed to parse config file — keeping last good config",
+                "解析配置文件失败 —— 保留上一次的有效配置",
                 exc_info=True,
             )
             return
@@ -881,7 +881,7 @@ class WatchDaemon:
         )
         self._health_thread.start()
         logger.info(
-            "Health checker started (interval=%ds)",
+            "健康检查已启动（间隔=%ds）",
             _HEALTH_CHECK_INTERVAL,
         )
 
@@ -908,7 +908,7 @@ class WatchDaemon:
             for alias, repo in list(self._current_repos.items()):
                 proc = self._children.get(alias)
                 if proc is None or proc.poll() is not None:
-                    logger.warning("Watcher for '%s' is dead — restarting", alias)
+                    logger.warning("'%s' 的监听器已死 —— 正在重启", alias)
                     # Clean up dead process entry
                     self._children.pop(alias, None)
                     self._start_watcher(repo)
@@ -930,7 +930,7 @@ class WatchDaemon:
         foreground and a warning is logged.
         """
         if sys.platform == "win32":
-            logger.warning("Forking is not supported on Windows — running in foreground")
+            logger.warning("Windows 不支持 fork —— 改为前台运行")
             write_pid()
             self._setup_signal_handlers()
             return
@@ -978,13 +978,13 @@ class WatchDaemon:
         # Set up signal handlers
         self._setup_signal_handlers()
 
-        logger.info("Daemonized (PID %d)", os.getpid())
+        logger.info("已 daemonize（PID %d）", os.getpid())
 
     def _setup_signal_handlers(self) -> None:
         """Install SIGTERM/SIGHUP handlers for graceful shutdown."""
 
         def _handle_sigterm(signum: int, frame: Any) -> None:
-            logger.info("Received signal %d — shutting down", signum)
+            logger.info("收到信号 %d —— 正在关闭", signum)
             self.stop()
             sys.exit(0)
 
@@ -1002,7 +1002,7 @@ class WatchDaemon:
             while True:
                 time.sleep(1)
         except KeyboardInterrupt:
-            logger.info("Keyboard interrupt — stopping daemon")
+            logger.info("键盘中断 —— 正在停止守护进程")
             self.stop()
 
     # ------------------------------------------------------------------
@@ -1026,7 +1026,7 @@ class WatchDaemon:
             self._state_path.parent.mkdir(parents=True, exist_ok=True)
             self._state_path.write_text(json.dumps(state), encoding="utf-8")
         except OSError:
-            logger.warning("Failed to persist daemon state to %s", self._state_path)
+            logger.warning("无法将守护进程状态持久化到 %s", self._state_path)
 
     def _clear_state(self) -> None:
         """Remove the state file from disk."""
@@ -1073,7 +1073,7 @@ class WatchDaemon:
 
         self._children[repo.alias] = proc
         logger.info(
-            "Started watcher for '%s' (PID %d) — log: %s",
+            "已为 '%s' 启动监听器（PID %d）—— 日志：%s",
             repo.alias,
             proc.pid,
             log_path,
@@ -1085,18 +1085,18 @@ class WatchDaemon:
         if proc.poll() is not None:
             return  # already dead
 
-        logger.info("Terminating watcher '%s' (PID %d)", alias, proc.pid)
+        logger.info("正在终止监听器 '%s'（PID %d）", alias, proc.pid)
         proc.terminate()
         try:
             proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
-            logger.warning("Watcher '%s' did not stop — sending SIGKILL", alias)
+            logger.warning("监听器 '%s' 未停止 —— 发送 SIGKILL", alias)
             proc.kill()
             proc.wait(timeout=5)
 
     def _initial_build(self, repo: WatchRepo) -> None:
         """Run a one-off graph build for a repo that has no database yet."""
-        logger.info("Building initial graph for %s...", repo.alias)
+        logger.info("正在为 %s 构建初始图……", repo.alias)
 
         crg_bin = shutil.which("code-review-graph")
         if crg_bin:
@@ -1119,7 +1119,7 @@ class WatchDaemon:
         )
         if result.returncode != 0:
             logger.warning(
-                "Initial build for '%s' failed (rc=%d): %s",
+                "'%s' 的初始构建失败（rc=%d）：%s",
                 repo.alias,
                 result.returncode,
                 result.stderr.strip(),

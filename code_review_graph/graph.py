@@ -1177,7 +1177,7 @@ class GraphStore:
                 "sources" if endpoint == "source_qualified" else "targets"
             )
             logger.info(
-                "Resolved %d evidence-backed bare %s %s",
+                "已解析 %d 个有证据支撑的裸 %s %s",
                 resolved,
                 kind,
                 endpoint_label,

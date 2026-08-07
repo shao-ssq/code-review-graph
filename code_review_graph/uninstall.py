@@ -100,7 +100,7 @@ def _safe_path(
     root = _absolute(boundary)
     if not _is_lexical_child(candidate, root):
         if describe_skip:
-            report.skipped_paths.append(f"{candidate} (outside allowed boundary {root})")
+            report.skipped_paths.append(f"{candidate}（在允许的边界 {root} 之外）")
         return False
 
     try:
@@ -109,7 +109,7 @@ def _safe_path(
         resolved_candidate.relative_to(resolved_root)
     except (OSError, RuntimeError, ValueError):
         if describe_skip:
-            report.skipped_paths.append(f"{candidate} (resolved outside allowed boundary {root})")
+            report.skipped_paths.append(f"{candidate}（解析后位于允许的边界 {root} 之外）")
         return False
 
     current = candidate
@@ -117,31 +117,31 @@ def _safe_path(
         try:
             if current.is_symlink():
                 if describe_skip:
-                    report.skipped_paths.append(f"{candidate} (symlink path is not removed)")
+                    report.skipped_paths.append(f"{candidate}（符号链接路径不予删除）")
                 return False
         except OSError as exc:
             if describe_skip:
-                report.skipped_paths.append(f"{candidate} (cannot inspect path: {exc})")
+                report.skipped_paths.append(f"{candidate}（无法检查路径：{exc}）")
             return False
         current = current.parent
     return True
 
 
 def _record_edit(report: UninstallReport, path: Path, detail: str, dry_run: bool) -> None:
-    verb = f"would {detail}" if dry_run else detail
-    report.edited_paths.append(f"{path} ({verb})")
+    verb = f"将{detail}" if dry_run else f"已{detail}"
+    report.edited_paths.append(f"{path}（{verb}）")
 
 
 def _record_remove(report: UninstallReport, path: Path, detail: str, dry_run: bool) -> None:
-    verb = f"would {detail}" if dry_run else detail
-    report.removed_paths.append(f"{path} ({verb})")
+    verb = f"将{detail}" if dry_run else f"已{detail}"
+    report.removed_paths.append(f"{path}（{verb}）")
 
 
 def _read_text(path: Path, report: UninstallReport) -> str | None:
     try:
         return path.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as exc:
-        report.errors.append(f"{path}: read failed ({exc})")
+        report.errors.append(f"{path}：读取失败（{exc}）")
         return None
 
 
@@ -176,14 +176,14 @@ def _write_text(
         os.replace(temporary, path)
         temporary = None
     except (OSError, UnicodeError) as exc:
-        report.errors.append(f"{path}: write failed ({exc})")
+        report.errors.append(f"{path}：写入失败（{exc}）")
         return
     finally:
         if temporary is not None:
             try:
                 temporary.unlink(missing_ok=True)
             except OSError as exc:
-                report.errors.append(f"{temporary}: temporary cleanup failed ({exc})")
+                report.errors.append(f"{temporary}：临时文件清理失败（{exc}）")
     _record_edit(report, path, detail, False)
 
 
@@ -402,11 +402,11 @@ def _parse_jsonc(path: Path, raw: str, report: UninstallReport) -> dict[str, Any
     try:
         parsed = json.loads(skills._strip_jsonc(raw))
     except (json.JSONDecodeError, RecursionError, ValueError) as exc:
-        report.skipped_paths.append(f"{path} (parse failed; left unchanged: {exc})")
+        report.skipped_paths.append(f"{path}（解析失败；保持不变：{exc}）")
         return None
     if not isinstance(parsed, dict):
         report.skipped_paths.append(
-            f"{path} (top level is {type(parsed).__name__}, not an object; left unchanged)"
+            f"{path}（顶层是 {type(parsed).__name__}，不是对象；保持不变）"
         )
         return None
     return parsed
@@ -435,9 +435,9 @@ def _remove_mcp_entry(
     expected_type = list if format_name == "array" else dict
     container = data[key]
     if not isinstance(container, expected_type):
-        expected = "array" if expected_type is list else "object"
+        expected = "数组" if expected_type is list else "对象"
         report.skipped_paths.append(
-            f"{path} ({key!r} is {type(container).__name__}, not {expected}; left unchanged)"
+            f"{path}（{key!r} 是 {type(container).__name__}，不是 {expected}；保持不变）"
         )
         return
 
@@ -467,16 +467,16 @@ def _remove_mcp_entry(
         rewritten = _remove_jsonc_paths(raw, paths)
         reparsed = json.loads(skills._strip_jsonc(rewritten))
     except (IndexError, KeyError, RecursionError, ValueError, json.JSONDecodeError) as exc:
-        report.skipped_paths.append(f"{path} (safe JSONC edit failed; left unchanged: {exc})")
+        report.skipped_paths.append(f"{path}（安全 JSONC 编辑失败；保持不变：{exc}）")
         return
     if reparsed != expected_data:
-        report.skipped_paths.append(f"{path} (safe JSONC edit did not validate; left unchanged)")
+        report.skipped_paths.append(f"{path}（安全 JSONC 编辑校验未通过；保持不变）")
         return
     _write_text(
         path,
         rewritten,
         report,
-        detail=f"removed {_ENTRY_NAME!r} from {key!r}",
+        detail=f"从 {key!r} 移除 {_ENTRY_NAME!r}",
         dry_run=dry_run,
     )
 
@@ -497,7 +497,7 @@ def _remove_toml_entry(
     try:
         _tomllib.loads(raw)
     except _tomllib.TOMLDecodeError as exc:
-        report.skipped_paths.append(f"{path} (TOML parse failed; left unchanged: {exc})")
+        report.skipped_paths.append(f"{path}（TOML 解析失败；保持不变：{exc}）")
         return
     header = f"[{key}.{_ENTRY_NAME}]"
     lines = raw.splitlines(keepends=True)
@@ -514,13 +514,13 @@ def _remove_toml_entry(
     try:
         _tomllib.loads(rewritten)
     except _tomllib.TOMLDecodeError as exc:  # pragma: no cover - defensive validation
-        report.skipped_paths.append(f"{path} (safe TOML edit failed; left unchanged: {exc})")
+        report.skipped_paths.append(f"{path}（安全 TOML 编辑失败；保持不变：{exc}）")
         return
     _write_text(
         path,
         rewritten,
         report,
-        detail=f"removed [{key}.{_ENTRY_NAME}]",
+        detail=f"移除 [{key}.{_ENTRY_NAME}]",
         dry_run=dry_run,
     )
 
@@ -655,16 +655,16 @@ def _remove_hooks(
         rewritten = _remove_jsonc_paths(raw, paths)
         reparsed = json.loads(skills._strip_jsonc(rewritten))
     except (IndexError, KeyError, RecursionError, ValueError, json.JSONDecodeError) as exc:
-        report.skipped_paths.append(f"{path} (safe hook edit failed; left unchanged: {exc})")
+        report.skipped_paths.append(f"{path}（安全钩子编辑失败；保持不变：{exc}）")
         return
     if reparsed != expected:
-        report.skipped_paths.append(f"{path} (safe hook edit did not validate; left unchanged)")
+        report.skipped_paths.append(f"{path}（安全钩子编辑校验未通过；保持不变）")
         return
     _write_text(
         path,
         rewritten,
         report,
-        detail="removed code-review-graph hook entries",
+        detail="移除 code-review-graph 钩子条目",
         dry_run=dry_run,
     )
 
@@ -675,7 +675,7 @@ def _remove_file(
     report: UninstallReport,
     *,
     dry_run: bool,
-    detail: str = "removed owned file",
+    detail: str = "删除自有文件",
 ) -> None:
     if not path.exists() and not path.is_symlink():
         return
@@ -687,7 +687,7 @@ def _remove_file(
     try:
         path.unlink()
     except OSError as exc:
-        report.errors.append(f"{path}: remove failed ({exc})")
+        report.errors.append(f"{path}：删除失败（{exc}）")
         return
     _record_remove(report, path, detail, False)
 
@@ -704,17 +704,17 @@ def _remove_tree(
     if not _safe_path(path, boundary, report):
         return
     if not path.is_dir():
-        report.skipped_paths.append(f"{path} (expected an owned directory; left unchanged)")
+        report.skipped_paths.append(f"{path}（预期为自有目录；保持不变）")
         return
     if dry_run:
-        _record_remove(report, path, "remove owned directory", True)
+        _record_remove(report, path, "删除自有目录", True)
         return
     try:
         shutil.rmtree(path)
     except OSError as exc:
-        report.errors.append(f"{path}: remove failed ({exc})")
+        report.errors.append(f"{path}：删除失败（{exc}）")
         return
-    _record_remove(report, path, "removed owned directory", False)
+    _record_remove(report, path, "删除自有目录", False)
 
 
 def _prune_empty_directory(path: Path, boundary: Path) -> None:
@@ -734,7 +734,7 @@ def _remove_skill_file(
     dry_run: bool,
 ) -> None:
     existed = path.exists()
-    _remove_file(path, boundary, report, dry_run=dry_run, detail="remove generated skill")
+    _remove_file(path, boundary, report, dry_run=dry_run, detail="删除生成的技能")
     if existed and not dry_run and not path.exists():
         _prune_empty_directory(path.parent, boundary)
 
@@ -762,8 +762,7 @@ def _remove_instruction(
         if marker_index < 0:
             return
         report.skipped_paths.append(
-            f"{path} (marked instruction section differs from a known installed section; "
-            "left unchanged)"
+            f"{path}（标记的指令区段与已知的已安装区段不一致；保持不变）"
         )
         return
     rewritten = rewritten.rstrip() + ("\n" if rewritten.strip() else "")
@@ -772,7 +771,7 @@ def _remove_instruction(
             path,
             rewritten,
             report,
-            detail="removed code-review-graph instruction section",
+            detail="移除 code-review-graph 指令区段",
             dry_run=dry_run,
         )
     else:
@@ -781,7 +780,7 @@ def _remove_instruction(
             boundary,
             report,
             dry_run=dry_run,
-            detail="remove generated instruction file",
+            detail="删除生成的指令文件",
         )
 
 
@@ -838,7 +837,7 @@ def _remove_git_hook(
             path,
             new_text,
             report,
-            detail="removed code-review-graph hook block",
+            detail="移除 code-review-graph 钩子块",
             dry_run=dry_run,
         )
     else:
@@ -847,7 +846,7 @@ def _remove_git_hook(
             repo_root,
             report,
             dry_run=dry_run,
-            detail="remove hook containing only code-review-graph",
+            detail="删除仅含 code-review-graph 的钩子",
         )
 
 
@@ -886,7 +885,7 @@ def _remove_gitignore(
             path,
             new_text,
             report,
-            detail="removed installer-owned ignore block",
+            detail="移除安装器写入的忽略块",
             dry_run=dry_run,
         )
     else:
@@ -895,7 +894,7 @@ def _remove_gitignore(
             repo_root,
             report,
             dry_run=dry_run,
-            detail="remove generated .gitignore",
+            detail="删除生成的 .gitignore",
         )
 
 
@@ -926,14 +925,14 @@ def _process_platform_configs(
             format_name = str(spec["format"])
         except (KeyError, OSError, TypeError, ValueError) as exc:
             report.skipped_paths.append(
-                f"{platform_name} config (invalid platform specification: {exc})"
+                f"{platform_name} 配置（无效的平台规格：{exc}）"
             )
             continue
         destination = _scope_for_config(path, repo_root, home)
         if destination is None:
             if path.exists():
                 report.skipped_paths.append(
-                    f"{path} ({platform_name} config is outside home/repo boundary)"
+                    f"{path}（{platform_name} 配置位于 home/repo 边界之外）"
                 )
             continue
         config_scope, boundary = destination
@@ -960,8 +959,8 @@ def _process_platform_configs(
                 )
             else:
                 report.skipped_paths.append(
-                    f"{path} ({platform_name} has unsupported config format "
-                    f"{format_name!r})"
+                    f"{path}（{platform_name} 使用了不支持的配置格式 "
+                    f"{format_name!r}）"
                 )
 
 
@@ -1028,7 +1027,7 @@ def _process_repo(
     for path, kind in data_paths:
         if keep_data:
             if path.exists() or path.is_symlink():
-                report.skipped_paths.append(f"{path} (kept by --keep-data)")
+                report.skipped_paths.append(f"{path}（由 --keep-data 保留）")
             continue
         if kind == "tree":
             _remove_tree(path, repo_root, report, dry_run=dry_run)
@@ -1089,7 +1088,7 @@ def _process_repo(
         try:
             candidates = list(source_skills.iterdir())
         except OSError as exc:
-            report.errors.append(f"{source_skills}: list failed ({exc})")
+            report.errors.append(f"{source_skills}：列目录失败（{exc}）")
         else:
             for candidate in candidates:
                 if candidate.is_dir() and (candidate / "SKILL.md").is_file():
@@ -1152,7 +1151,7 @@ def _process_user(
     user_data = home / ".code-review-graph"
     if keep_data:
         if user_data.exists() or user_data.is_symlink():
-            report.skipped_paths.append(f"{user_data} (kept by --keep-data)")
+            report.skipped_paths.append(f"{user_data}（由 --keep-data 保留）")
     else:
         _remove_tree(user_data, home, report, dry_run=dry_run)
 
@@ -1196,11 +1195,11 @@ def _registry_repo_paths(home: Path, report: UninstallReport) -> list[Path]:
     try:
         data = json.loads(raw)
     except (json.JSONDecodeError, RecursionError) as exc:
-        report.skipped_paths.append(f"{path} (registry parse failed: {exc})")
+        report.skipped_paths.append(f"{path}（注册表解析失败：{exc}）")
         return []
     repos = data.get("repos") if isinstance(data, dict) else None
     if not isinstance(repos, list):
-        report.skipped_paths.append(f"{path} (registry has no valid repos array)")
+        report.skipped_paths.append(f"{path}（注册表中没有有效的 repos 数组）")
         return []
     paths: list[Path] = []
     for entry in repos:
@@ -1210,7 +1209,7 @@ def _registry_repo_paths(home: Path, report: UninstallReport) -> list[Path]:
         data_dir = entry.get("data_dir") if isinstance(entry, dict) else None
         if isinstance(data_dir, str) and data_dir:
             report.skipped_paths.append(
-                f"{Path(data_dir).expanduser()} (external data directory retained for safety)"
+                f"{Path(data_dir).expanduser()}（外部数据目录，为安全起见保留）"
             )
     return paths
 
@@ -1220,30 +1219,30 @@ def _normalise_repo(path: Path, home: Path, report: UninstallReport) -> Path | N
     try:
         resolved = lexical.resolve(strict=False)
     except (OSError, RuntimeError) as exc:
-        report.skipped_paths.append(f"{lexical} (cannot resolve repository: {exc})")
+        report.skipped_paths.append(f"{lexical}（无法解析仓库：{exc}）")
         return None
     filesystem_root = Path(resolved.anchor)
     if resolved in {filesystem_root, home.resolve(strict=False)}:
-        report.skipped_paths.append(f"{resolved} (refusing unsafe repository boundary)")
+        report.skipped_paths.append(f"{resolved}（拒绝不安全的仓库边界）")
         return None
     if not resolved.is_dir():
-        report.skipped_paths.append(f"{resolved} (repository directory is missing)")
+        report.skipped_paths.append(f"{resolved}（仓库目录不存在）")
         return None
 
     from .incremental import find_repo_root
 
     repository_root = find_repo_root(resolved)
     if repository_root is None:
-        report.skipped_paths.append(f"{resolved} (not inside a Git or SVN repository)")
+        report.skipped_paths.append(f"{resolved}（不在 Git 或 SVN 仓库内）")
         return None
     try:
         repository_root = repository_root.resolve(strict=True)
     except (OSError, RuntimeError) as exc:
-        report.skipped_paths.append(f"{resolved} (cannot resolve repository root: {exc})")
+        report.skipped_paths.append(f"{resolved}（无法解析仓库根目录：{exc}）")
         return None
     if repository_root in {Path(repository_root.anchor), home.resolve(strict=False)}:
         report.skipped_paths.append(
-            f"{repository_root} (refusing unsafe repository boundary)"
+            f"{repository_root}（拒绝不安全的仓库边界）"
         )
         return None
     return repository_root

@@ -64,7 +64,7 @@ def rebuild_fts_index(store: GraphStore) -> int:
         raise
 
     count = conn.execute("SELECT count(*) FROM nodes_fts").fetchone()[0]
-    logger.info("FTS index rebuilt: %d rows indexed", count)
+    logger.info("FTS 索引已重建：已索引 %d 行", count)
     return count
 
 

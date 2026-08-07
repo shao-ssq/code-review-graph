@@ -51,12 +51,16 @@ from typing import Iterable, TypedDict
 
 logger = logging.getLogger(__name__)
 
-# Shared platform choices for install and init commands
+# Shared platform choices for install, init, and uninstall commands.
+# ``all`` is only valid for ``uninstall`` (full teardown) — installing must
+# target one specific platform so the user always opts in per tool.
 _PLATFORM_CHOICES = [
     "codex", "claude", "claude-code", "cursor", "windsurf", "zed",
     "continue", "opencode", "antigravity", "gemini-cli", "qwen", "kiro", "qoder",
     "copilot", "copilot-cli", "codebuddy", "all",
 ]
+# Choices for ``install`` / ``init`` — ``all`` is intentionally excluded.
+_INSTALL_PLATFORM_CHOICES = [c for c in _PLATFORM_CHOICES if c != "all"]
 
 
 class _EmbeddingRefreshKwargs(TypedDict, total=False):
@@ -261,40 +265,42 @@ def _handle_init(args: argparse.Namespace) -> None:
         repo_root = Path.cwd()
 
     dry_run = getattr(args, "dry_run", False)
-    target = getattr(args, "platform", "all") or "all"
+    # --platform is required by argparse for install/init, so args.platform is
+    # always set. Normalize the ``claude-code`` alias to ``claude``.
+    target = getattr(args, "platform", None) or "all"
     if target == "claude-code":
         target = "claude"
     auto_yes = getattr(args, "yes", False)
     skip_instructions = getattr(args, "no_instructions", False)
 
-    print("Installing MCP server config...")
+    print("正在安装 MCP 服务器配置...")
     configured = install_platform_configs(repo_root, target=target, dry_run=dry_run)
 
     if not configured:
-        print("No platforms detected.")
+        print("未检测到平台。")
     else:
-        print(f"\nConfigured {len(configured)} platform(s): {', '.join(configured)}")
+        print(f"\n已配置 {len(configured)} 个平台：{', '.join(configured)}")
 
     # Preview the instruction files that would be touched (#173).
     instr_targets = _instruction_files_to_modify(repo_root, target)
     if instr_targets:
         print()
-        print("Graph instructions will be injected into:")
+        print("图谱指令将被注入到以下文件：")
         for t in instr_targets:
             print(f"  {t}")
 
     if dry_run:
-        print("\n[dry-run] Would ensure .gitignore ignores .code-review-graph/.")
-        print("[dry-run] No files were modified.")
+        print("\n[dry-run] 将确保 .gitignore 忽略 .code-review-graph/。")
+        print("[dry-run] 未修改任何文件。")
         return
 
     gitignore_state = ensure_repo_gitignore_excludes_crg(repo_root)
     if gitignore_state == "created":
-        print("Created .gitignore and added .code-review-graph/.")
+        print("已创建 .gitignore 并添加 .code-review-graph/。")
     elif gitignore_state == "updated":
-        print("Updated .gitignore with .code-review-graph/.")
+        print("已更新 .gitignore，加入 .code-review-graph/。")
     else:
-        print(".gitignore already contains .code-review-graph/.")
+        print(".gitignore 已包含 .code-review-graph/。")
 
     # Platform-native skills and hooks are installed by default where supported
     # so the graph tools are used proactively. Use --no-skills / --no-hooks /
@@ -324,23 +330,23 @@ def _handle_init(args: argparse.Namespace) -> None:
         # Claude Code skills are only relevant for Claude (or full install).
         if target in ("claude", "all"):
             skills_dir = generate_skills(repo_root)
-            print(f"Generated Claude Code skills in {skills_dir}")
+            print(f"已在 {skills_dir} 生成 Claude Code 技能")
 
         # Gemini CLI skills are workspace-scoped under .gemini/.
         if target in ("gemini-cli", "all"):
             gemini_skills_dir = install_gemini_cli_skills(repo_root)
-            print(f"Installed Gemini CLI skills in {gemini_skills_dir}")
+            print(f"已在 {gemini_skills_dir} 安装 Gemini CLI 技能")
 
         # CodeBuddy discovers project skills under .codebuddy/skills/.
         if target in ("codebuddy", "all"):
             codebuddy_skills_dir = install_codebuddy_skills(repo_root)
-            print(f"Installed CodeBuddy skills in {codebuddy_skills_dir}")
+            print(f"已在 {codebuddy_skills_dir} 安装 CodeBuddy 技能")
 
     # Confirm before writing instruction files (#173). --yes skips the
     # prompt; --no-instructions skips the whole block.
     if not skip_instructions and instr_targets:
         if auto_yes or _confirm_yes_no(
-            "Inject graph instructions into the files above?",
+            "是否将图谱指令注入到上述文件？",
             default_yes=True,
         ):
             if target in ("claude", "all"):
@@ -350,66 +356,66 @@ def _handle_init(args: argparse.Namespace) -> None:
             # message; we don't need the fresh return value from
             # inject_platform_instructions here.
             names = [t.split(" ")[0] for t in instr_targets]
-            print(f"Injected graph instructions into: {', '.join(names)}")
+            print(f"已将图谱指令注入：{', '.join(names)}")
         else:
-            print("Skipped instruction injection (user declined).")
+            print("已跳过指令注入（用户拒绝）。")
     elif skip_instructions:
-        print("Skipped instruction injection (--no-instructions).")
+        print("已跳过指令注入（--no-instructions）。")
 
 
     # Install Qoder skills (global user-level skills directory)
     if not skip_skills and target in ("qoder", "all"):
         qoder_skills_dir = install_qoder_skills(repo_root)
         if qoder_skills_dir:
-            print(f"Installed Qoder skills to {qoder_skills_dir}")
+            print(f"已安装 Qoder 技能到 {qoder_skills_dir}")
     if not skip_hooks and target in ("codebuddy", "all"):
         try:
             codebuddy_settings = install_codebuddy_hooks(repo_root)
-            print(f"Installed CodeBuddy hooks in {codebuddy_settings}")
+            print(f"已在 {codebuddy_settings} 安装 CodeBuddy 钩子")
         except Exception as exc:
-            logger.warning("Could not install CodeBuddy hooks: %s", exc)
+            logger.warning("无法安装 CodeBuddy 钩子：%s", exc)
     if not skip_hooks and target in ("codex", "all"):
         hooks_path = install_codex_hooks(repo_root)
-        print(f"Installed Codex hooks in {hooks_path}")
+        print(f"已在 {hooks_path} 安装 Codex 钩子")
         git_hook = install_git_hook(repo_root)
         if git_hook:
-            print(f"Installed git pre-commit hook in {git_hook}")
+            print(f"已在 {git_hook} 安装 git pre-commit 钩子")
     if not skip_hooks and target in ("claude", "qoder", "all"):
         platforms_to_install = [target] if target != "all" else ["claude", "qoder"]
         for plat in platforms_to_install:
             install_hooks(repo_root, platform=plat)
-            print(f"Installed hooks in {repo_root / f'.{plat}' / 'settings.json'}")
+            print(f"已在 {repo_root / f'.{plat}' / 'settings.json'} 安装钩子")
         git_hook = install_git_hook(repo_root)
         if git_hook:
-            print(f"Installed git pre-commit hook in {git_hook}")
+            print(f"已在 {git_hook} 安装 git pre-commit 钩子")
 
     # Cursor hooks (user-level, only if ~/.cursor exists — matching MCP detect)
     if not skip_hooks and target in ("all", "cursor") and PLATFORMS["cursor"]["detect"]():
         try:
             hooks_path = install_cursor_hooks()
-            print(f"Installed Cursor hooks in {hooks_path}")
+            print(f"已在 {hooks_path} 安装 Cursor 钩子")
         except Exception as exc:
-            logger.warning("Could not install Cursor hooks: %s", exc)
+            logger.warning("无法安装 Cursor 钩子：%s", exc)
 
     if not skip_hooks and target in ("gemini-cli", "all"):
         try:
             gemini_settings = install_gemini_cli_hooks(repo_root)
-            print(f"Installed Gemini CLI hooks in {gemini_settings}")
+            print(f"已在 {gemini_settings} 安装 Gemini CLI 钩子")
         except Exception as exc:
-            logger.warning("Could not install Gemini CLI hooks: %s", exc)
+            logger.warning("无法安装 Gemini CLI 钩子：%s", exc)
 
     # OpenCode plugin (user-level, gated by same detect() as MCP config)
     if not skip_hooks and target in ("all", "opencode") and PLATFORMS["opencode"]["detect"]():
         try:
             plugin_path = install_opencode_plugin()
-            print(f"Installed OpenCode plugin in {plugin_path}")
+            print(f"已在 {plugin_path} 安装 OpenCode 插件")
         except Exception as exc:
-            logger.warning("Could not install OpenCode plugin: %s", exc)
+            logger.warning("无法安装 OpenCode 插件：%s", exc)
 
     print()
-    print("Next steps:")
-    print("  1. code-review-graph build    # build the knowledge graph")
-    print("  2. Restart your AI coding tool to pick up the new config")
+    print("后续步骤：")
+    print("  1. code-review-graph build    # 构建知识图谱")
+    print("  2. 重启你的 AI 编码工具以加载新配置")
 
 
 def _handle_data_dir_option(args, repo_root: Path) -> None:
@@ -646,9 +652,10 @@ def main() -> None:
     )
     install_cmd.add_argument(
         "--platform",
-        choices=_PLATFORM_CHOICES,
-        default="all",
-        help="Target platform for MCP config (default: all detected)",
+        choices=_INSTALL_PLATFORM_CHOICES,
+        required=True,
+        help="Target platform for MCP config (required — installing all platforms "
+             "at once is not supported; specify one platform explicitly)",
     )
 
     init_cmd = sub.add_parser("init", help="Alias for install")
@@ -684,9 +691,9 @@ def main() -> None:
     init_cmd.add_argument("--all", action="store_true", dest="install_all", help=argparse.SUPPRESS)
     init_cmd.add_argument(
         "--platform",
-        choices=_PLATFORM_CHOICES,
-        default="all",
-        help="Target platform for MCP config (default: all detected)",
+        choices=_INSTALL_PLATFORM_CHOICES,
+        required=True,
+        help="Target platform for MCP config (required — see `install`)",
     )
 
     uninstall_cmd = sub.add_parser(
@@ -1439,49 +1446,49 @@ def main() -> None:
 
         def _print_report(report: UninstallReport) -> None:
             for action in report.removed_paths:
-                print(f"  delete  {action}")
+                print(f"  删除    {action}")
             for action in report.edited_paths:
-                print(f"  edit    {action}")
+                print(f"  编辑    {action}")
             for action in report.skipped_paths:
-                print(f"  skip    {action}")
+                print(f"  跳过    {action}")
             for error in report.errors:
-                print(f"  error   {error}")
+                print(f"  错误    {error}")
 
         preview = run_uninstall(**options, dry_run=True)
         if scoped_platforms:
-            print(f"code-review-graph unbind ({platform_target}) — planned actions:")
+            print(f"code-review-graph 解绑 ({platform_target}) —— 计划动作：")
         else:
-            print("code-review-graph uninstall — planned actions:")
+            print("code-review-graph 卸载 —— 计划动作：")
         _print_report(preview)
         if preview.total_actions == 0:
             if preview.errors:
                 raise SystemExit(1)
             if scoped_platforms:
                 print(
-                    f"  (nothing to do — {platform_target} has no "
-                    "code-review-graph MCP registration)"
+                    f"  （无需操作 —— {platform_target} 没有任何 "
+                    "code-review-graph MCP 注册）"
                 )
             else:
-                print("  (nothing to do — no code-review-graph artifacts found)")
+                print("  （无需操作 —— 未找到 code-review-graph 相关产物）")
             return
         if args.dry_run:
-            print("\n[dry-run] No changes made.")
+            print("\n[dry-run] 未做任何更改。")
             if preview.errors:
                 raise SystemExit(1)
             return
-        action_word = "unbind" if scoped_platforms else "uninstall"
+        action_word = "解绑" if scoped_platforms else "卸载"
         if not args.yes and not _confirm_yes_no(
-            f"\nProceed with {action_word}?", default_yes=False
+            f"\n是否执行{action_word}？", default_yes=False
         ):
-            print("Aborted.")
+            print("已取消。")
             return
 
         uninstall_result = run_uninstall(**options, dry_run=False)
-        print("\nApplied actions:")
+        print("\n已执行动作：")
         _print_report(uninstall_result)
         print(
-            f"Done. Removed {len(uninstall_result.removed_paths)} path(s); "
-            f"edited {len(uninstall_result.edited_paths)} shared file(s)."
+            f"完成。已删除 {len(uninstall_result.removed_paths)} 个路径；"
+            f"已编辑 {len(uninstall_result.edited_paths)} 个共享文件。"
         )
         if uninstall_result.errors:
             raise SystemExit(1)
@@ -1683,11 +1690,11 @@ def main() -> None:
             edges = result.get("total_edges", 0)
             if not args.quiet:
                 print(
-                    f"Full build: {parsed} files, {nodes} nodes, {edges} edges "
-                    f"(postprocess={pp})"
+                    f"全量构建：{parsed} 个文件，{nodes} 个节点，{edges} 条边 "
+                    f"（后处理={pp}）"
                 )
                 if result.get("errors"):
-                    print(f"Errors: {len(result['errors'])}")
+                    print(f"错误：{len(result['errors'])} 个")
 
         elif args.command == "update":
             pp = (
@@ -1719,16 +1726,16 @@ def main() -> None:
                     # so the update fell back to a full rebuild.
                     parsed = result.get("files_parsed", 0)
                     print(
-                        f"Full rebuild (no usable incremental base): "
-                        f"{parsed} files, {nodes} nodes, {edges} edges"
-                        f" (postprocess={pp})"
+                        f"全量重建（无可用增量基准）："
+                        f"{parsed} 个文件，{nodes} 个节点，{edges} 条边"
+                        f"（后处理={pp}）"
                     )
                 else:
                     updated = result.get("files_updated", 0)
                     print(
-                        f"Incremental: {updated} files updated, "
-                        f"{nodes} nodes, {edges} edges"
-                        f" (postprocess={pp})"
+                        f"增量更新：{updated} 个文件已更新，"
+                        f"{nodes} 个节点，{edges} 条边"
+                        f"（后处理={pp}）"
                     )
 
             # --brief: append a one-line change-impact summary with the same

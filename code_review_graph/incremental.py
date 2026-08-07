@@ -1096,7 +1096,7 @@ def full_build(
                 if parser.detect_language(full_path) == "cpp":
                     cpp_errors.add(str(rel_path))
             if i % 50 == 0 or i == file_count:
-                logger.info("Progress: %d/%d files parsed", i, file_count)
+                logger.info("进度：%d/%d 个文件已解析", i, file_count)
     else:
         # Parallel parsing — store calls remain serial (SQLite single-writer).
         # Executor kind auto-selected: process for normal CLI/automation;
@@ -1125,7 +1125,7 @@ def full_build(
                 total_nodes += len(nodes)
                 total_edges += len(edges)
                 if i % 200 == 0 or i == file_count:
-                    logger.info("Progress: %d/%d files parsed", i, file_count)
+                    logger.info("进度：%d/%d 个文件已解析", i, file_count)
 
     store.set_metadata("last_updated", time.strftime("%Y-%m-%dT%H:%M:%S"))
     store.set_metadata("last_build_type", "full")
@@ -1174,7 +1174,7 @@ def incremental_update(
         and store.has_nodes_for_language("cpp")
     ):
         logger.info(
-            "C++ identity format changed; rebuilding the graph before incremental update",
+            "C++ identity 格式已变更；在增量更新前重建图",
         )
         rebuilt = full_build(repo_root, store)
         return {
@@ -1567,7 +1567,7 @@ def watch(
     handler.start()
     observer.start()
 
-    logger.info("Watching %s for changes... (Ctrl+C to stop)", repo_root)
+    logger.info("正在监听 %s 的变更……（Ctrl+C 停止）", repo_root)
     try:
         import time as _time
 
@@ -1580,7 +1580,7 @@ def watch(
         observer.stop()
         observer.join()
         handler.stop()
-    logger.info("Watch stopped.")
+    logger.info("监听已停止。")
 
 
 def start_watch_thread(
@@ -1605,5 +1605,5 @@ def start_watch_thread(
         name="crg-watch",
     )
     thread.start()
-    logger.info("Auto-watch started for %s", repo_root)
+    logger.info("已为 %s 启动自动监听", repo_root)
     return thread

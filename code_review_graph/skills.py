@@ -568,13 +568,13 @@ def install_platform_configs(
                 dry_run=dry_run,
             )
             if not changed:
-                print(f"  {plat['name']}: already configured in {config_path}")
+                print(f"  {plat['name']}：已在 {config_path} 中配置，无需改动")
                 _record_configured(key, plat)
                 continue
             if dry_run:
-                print(f"  [dry-run] {plat['name']}: would write {config_path}")
+                print(f"  [dry-run] {plat['name']}：将写入 {config_path}")
             else:
-                print(f"  {plat['name']}: configured {config_path}")
+                print(f"  {plat['name']}：已配置 {config_path}")
             _record_configured(key, plat)
             continue
 
@@ -594,19 +594,17 @@ def install_platform_configs(
                 try:
                     parsed = json.loads(stripped)
                 except (json.JSONDecodeError, OSError):
-                    print(f"  {plat['name']}: {config_path} contains "
-                          f"unparseable JSON — skipping to avoid data loss. "
-                          f"Please add the MCP config manually.")
+                    print(f"  {plat['name']}：{config_path} 含有无法解析的 JSON —— "
+                          f"为避免数据丢失已跳过。请手动添加 MCP 配置。")
                     continue
                 if not isinstance(parsed, dict):
                     # Valid JSON, but the top level is a list/scalar rather
                     # than an object. Writing our server object would clobber
                     # the user's data, and the ``.get()`` calls below would
                     # raise AttributeError. Refuse and skip. See #344.
-                    print(f"  {plat['name']}: {config_path} is valid JSON but "
-                          f"not a top-level object "
-                          f"({type(parsed).__name__}) — skipping to avoid "
-                          f"data loss. Please add the MCP config manually.")
+                    print(f"  {plat['name']}：{config_path} 是合法 JSON 但顶层不是"
+                          f"对象（{type(parsed).__name__}）—— "
+                          f"为避免数据丢失已跳过。请手动添加 MCP 配置。")
                     continue
                 existing = parsed
 
@@ -617,10 +615,9 @@ def install_platform_configs(
             expected_name = "array" if expected_container is list else "object"
             actual_name = type(existing[server_key]).__name__
             print(
-                f"  {plat['name']}: {config_path} setting {server_key!r} "
-                f"is {actual_name}; expected a JSON {expected_name} — "
-                f"skipping to avoid data loss. Please repair that setting "
-                f"or add the MCP config manually."
+                f"  {plat['name']}：{config_path} 中的 {server_key!r} "
+                f"是 {actual_name}；应为 JSON {expected_name} —— "
+                f"为避免数据丢失已跳过。请修复该设置或手动添加 MCP 配置。"
             )
             continue
 
@@ -628,7 +625,7 @@ def install_platform_configs(
             arr = existing.get(server_key, [])
             # Check if already present
             if any(isinstance(s, dict) and s.get("name") == "code-review-graph" for s in arr):
-                print(f"  {plat['name']}: already configured in {config_path}")
+                print(f"  {plat['name']}：已在 {config_path} 中配置，无需改动")
                 _record_configured(key, plat)
                 continue
             arr_entry = {"name": "code-review-graph", **server_entry}
@@ -650,20 +647,20 @@ def install_platform_configs(
                     migrated = True
             servers = existing.get(server_key, {})
             if "code-review-graph" in servers and not migrated:
-                print(f"  {plat['name']}: already configured in {config_path}")
+                print(f"  {plat['name']}：已在 {config_path} 中配置，无需改动")
                 _record_configured(key, plat)
                 continue
             servers["code-review-graph"] = server_entry
             existing[server_key] = servers
 
         if dry_run:
-            print(f"  [dry-run] {plat['name']}: would write {config_path}")
+            print(f"  [dry-run] {plat['name']}：将写入 {config_path}")
         else:
             config_path.parent.mkdir(parents=True, exist_ok=True)
             config_path.write_text(
                 json.dumps(existing, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
             )
-            print(f"  {plat['name']}: configured {config_path}")
+            print(f"  {plat['name']}：已配置 {config_path}")
 
         _record_configured(key, plat)
 

@@ -119,5 +119,5 @@ def resolve_python_imports(store: GraphStore) -> dict[str, int]:
         "imports_resolved": resolved,
         "imports_ambiguous": ambiguous,
     }
-    logger.info("Python import resolution: %s", result)
+    logger.info("Python import 解析：%s", result)
     return result

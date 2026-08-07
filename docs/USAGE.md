@@ -1,44 +1,5 @@
 # Code Review Graph —— 用户指南
 
-## 安装
-
-```bash
-pip install code-review-graph
-code-review-graph install    # 自动检测并配置所有支持的平台
-code-review-graph build      # 解析你的代码库
-```
-
-`install` 会检测你安装了哪些 AI 编码工具，为每个工具写入正确的 MCP 配置，并在支持的平台上安装原生 Hook。安装完成后请重启编辑器/工具。
-
-若要针对特定平台而非自动检测所有平台：
-
-```bash
-code-review-graph install --platform codex
-code-review-graph install --platform cursor
-code-review-graph install --platform claude-code
-code-review-graph install --platform codebuddy
-```
-
-### 支持的平台
-
-| 平台 | 配置文件 |
-|------|----------|
-| **Codex** | `~/.codex/config.toml` + `~/.codex/hooks.json` |
-| **Claude Code** | `.mcp.json` + `.claude/settings.json` |
-| **CodeBuddy Code** | `.mcp.json` + `CODEBUDDY.md` + `.codebuddy/settings.json` + `.codebuddy/skills/<name>/SKILL.md` |
-| **Cursor** | `.cursor/mcp.json` |
-| **Windsurf** | `~/.codeium/windsurf/mcp_config.json` |
-| **Zed** | `~/Library/Application Support/Zed/settings.json`（macOS）或 `~/.config/zed/settings.json` |
-| **Continue** | `~/.continue/config.json` |
-| **OpenCode** | `opencode.jsonc`（优先）或 `opencode.json` |
-| **Antigravity** | `~/.gemini/antigravity/mcp_config.json` |
-| **Gemini CLI** | `.gemini/settings.json` |
-| **Qwen Code** | `~/.qwen/settings.json` |
-| **Kiro** | `.kiro/settings/mcp.json` |
-| **Qoder** | `.qoder/mcp.json` |
-| **GitHub Copilot** | `.vscode/mcp.json` |
-| **GitHub Copilot CLI** | `~/.copilot/mcp-config.json` |
-
 ## 核心工作流
 
 ### 1. 构建图（仅首次）

@@ -33,7 +33,7 @@ def _handle_start(args: argparse.Namespace) -> None:
     from .daemon import WatchDaemon, is_daemon_running, load_config, write_pid
 
     if is_daemon_running():
-        print("Error: Daemon is already running.")
+        print("错误：守护进程已在运行。")
         sys.exit(1)
 
     config = load_config()
@@ -60,23 +60,23 @@ def _handle_stop(_args: argparse.Namespace) -> None:
     from .daemon import clear_pid, is_daemon_running, read_pid
 
     if not is_daemon_running():
-        print("Daemon is not running.")
+        print("守护进程未在运行。")
         sys.exit(1)
 
     pid = read_pid()
     if pid is None:
-        print("Error: Could not read daemon PID.")
+        print("错误：无法读取守护进程 PID。")
         sys.exit(1)
 
-    print(f"Stopping daemon (PID {pid})...")
+    print(f"正在停止守护进程（PID {pid}）……")
     try:
         os.kill(pid, signal.SIGTERM)
     except ProcessLookupError:
         clear_pid()
-        print("Daemon stopped (process already gone).")
+        print("守护进程已停止（进程已不存在）。")
         return
     except PermissionError:
-        print(f"Error: Permission denied sending signal to PID {pid}.")
+        print(f"错误：向 PID {pid} 发送信号被拒绝。")
         sys.exit(1)
 
     # Wait up to 5 seconds for process to die
@@ -88,14 +88,14 @@ def _handle_stop(_args: argparse.Namespace) -> None:
         time.sleep(0.1)
     else:
         # Still alive after 5s — send SIGKILL
-        print("Daemon did not stop gracefully, sending SIGKILL...")
+        print("守护进程未优雅退出，正在发送 SIGKILL……")
         try:
             os.kill(pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
 
     clear_pid()
-    print("Daemon stopped.")
+    print("守护进程已停止。")
 
 
 def _handle_restart(args: argparse.Namespace) -> None:
@@ -105,7 +105,7 @@ def _handle_restart(args: argparse.Namespace) -> None:
     if is_daemon_running():
         _handle_stop(args)
     else:
-        print("Daemon is not running, starting fresh.")
+        print("守护进程未在运行，直接启动。")
 
     _handle_start(args)
 
@@ -119,18 +119,18 @@ def _handle_status(_args: argparse.Namespace) -> None:
 
     if running:
         pid = read_pid()
-        print(f"Daemon:  running (PID {pid})")
+        print(f"守护进程：运行中（PID {pid}）")
     else:
-        print("Daemon:  not running")
+        print("守护进程：未运行")
 
-    print(f"Name:    {config.session_name}")
-    print(f"Log dir: {config.log_dir}")
-    print(f"Poll:    {config.poll_interval}s")
+    print(f"名称：    {config.session_name}")
+    print(f"日志目录：{config.log_dir}")
+    print(f"轮询间隔：{config.poll_interval}s")
     print()
 
     if not config.repos:
-        print("No repositories configured.")
-        print("Use: crg-daemon add <path> [--alias NAME]")
+        print("尚未配置任何仓库。")
+        print("用法：crg-daemon add <path> [--alias NAME]")
         return
 
     # Header
@@ -139,17 +139,17 @@ def _handle_status(_args: argparse.Namespace) -> None:
 
     if running:
         state = load_state()
-        print(f"  {'Alias':<{alias_width}}  {'Status':<8}  {'PID':<8}  Path")
+        print(f"  {'别名':<{alias_width}}  {'状态':<8}  {'PID':<8}  路径")
         print(f"  {'-' * alias_width}  {'-' * 8}  {'-' * 8}  {'-' * 40}")
         for repo in config.repos:
             entry = state.get(repo.alias, {})
             child_pid: int | None = entry.get("pid")
             alive = child_pid is not None and pid_alive(child_pid)
-            status_str = "alive" if alive else "dead"
+            status_str = "存活" if alive else "已死"
             pid_str = str(child_pid) if child_pid is not None else "-"
             print(f"  {repo.alias:<{alias_width}}  {status_str:<8}  {pid_str:<8}  {repo.path}")
     else:
-        print(f"  {'Alias':<{alias_width}}  Path")
+        print(f"  {'别名':<{alias_width}}  路径")
         print(f"  {'-' * alias_width}  {'-' * 40}")
         for repo in config.repos:
             print(f"  {repo.alias:<{alias_width}}  {repo.path}")
@@ -167,7 +167,7 @@ def _handle_logs(args: argparse.Namespace) -> None:
         log_file = config.log_dir / "daemon.log"
 
     if not log_file.exists():
-        print(f"Log file not found: {log_file}")
+        print(f"未找到日志文件：{log_file}")
         sys.exit(1)
 
     if args.follow:
@@ -182,7 +182,7 @@ def _handle_logs(args: argparse.Namespace) -> None:
     try:
         text = log_file.read_text(encoding="utf-8", errors="replace")
     except OSError as exc:
-        print(f"Error reading log file: {exc}")
+        print(f"读取日志文件出错：{exc}")
         sys.exit(1)
 
     lines = text.splitlines()
@@ -198,15 +198,15 @@ def _handle_add(args: argparse.Namespace) -> None:
     try:
         add_repo_to_config(args.path, alias=args.alias)
     except ValueError as exc:
-        print(f"Error: {exc}")
+        print(f"错误：{exc}")
         sys.exit(1)
 
     # Find the repo we just added to show confirmation
     alias = args.alias or os.path.basename(os.path.abspath(args.path))
-    print(f"Added repository: {args.path} (alias: {alias})")
+    print(f"已添加仓库：{args.path}（别名：{alias}）")
 
     if is_daemon_running():
-        print("Daemon will pick up the change automatically.")
+        print("守护进程将自动应用该变更。")
 
 
 def _handle_remove(args: argparse.Namespace) -> None:
@@ -220,13 +220,13 @@ def _handle_remove(args: argparse.Namespace) -> None:
     count_after = len(config_after.repos)
 
     if count_before == count_after:
-        print(f"No repository matching '{args.path_or_alias}' found in config.")
+        print(f"配置中未找到匹配 '{args.path_or_alias}' 的仓库。")
         sys.exit(1)
 
-    print(f"Removed repository: {args.path_or_alias}")
+    print(f"已移除仓库：{args.path_or_alias}")
 
     if is_daemon_running():
-        print("Daemon will pick up the change automatically.")
+        print("守护进程将自动应用该变更。")
 
 
 # ---------------------------------------------------------------------------
@@ -240,66 +240,66 @@ def main() -> None:
 
     ap = argparse.ArgumentParser(
         prog="crg-daemon",
-        description="Multi-repo watch daemon for code-review-graph",
+        description="code-review-graph 的多仓库监听守护进程",
     )
     sub = ap.add_subparsers(dest="command")
 
     # start
-    start_cmd = sub.add_parser("start", help="Start the daemon")
+    start_cmd = sub.add_parser("start", help="启动守护进程")
     start_cmd.add_argument(
         "--foreground",
         action="store_true",
-        help="Run in the foreground instead of daemonizing",
+        help="在前台运行，而非后台 daemonize",
     )
 
     # stop
-    sub.add_parser("stop", help="Stop the daemon")
+    sub.add_parser("stop", help="停止守护进程")
 
     # restart
-    restart_cmd = sub.add_parser("restart", help="Restart the daemon")
+    restart_cmd = sub.add_parser("restart", help="重启守护进程")
     restart_cmd.add_argument(
         "--foreground",
         action="store_true",
-        help="Run in the foreground instead of daemonizing",
+        help="在前台运行，而非后台 daemonize",
     )
 
     # status
-    sub.add_parser("status", help="Show daemon status and configuration")
+    sub.add_parser("status", help="查看守护进程状态与配置")
 
     # logs
-    logs_cmd = sub.add_parser("logs", help="Show daemon or per-repo logs")
+    logs_cmd = sub.add_parser("logs", help="查看守护进程或单个仓库的日志")
     logs_cmd.add_argument(
         "--repo",
         default=None,
         metavar="ALIAS",
-        help="Show logs for a specific repo (by alias)",
+        help="查看指定仓库（按别名）的日志",
     )
     logs_cmd.add_argument(
         "--follow",
         "-f",
         action="store_true",
-        help="Follow log output (tail -f)",
+        help="持续追踪日志输出（tail -f）",
     )
     logs_cmd.add_argument(
         "--lines",
         "-n",
         type=int,
         default=50,
-        help="Number of lines to show (default: 50)",
+        help="显示的行数（默认：50）",
     )
 
     # add
-    add_cmd = sub.add_parser("add", help="Add a repository to the daemon config")
-    add_cmd.add_argument("path", help="Path to the repository")
+    add_cmd = sub.add_parser("add", help="将仓库加入守护进程配置")
+    add_cmd.add_argument("path", help="仓库路径")
     add_cmd.add_argument(
         "--alias",
         default=None,
-        help="Short alias for the repository (default: directory name)",
+        help="仓库的短别名（默认：目录名）",
     )
 
     # remove
-    remove_cmd = sub.add_parser("remove", help="Remove a repository from the daemon config")
-    remove_cmd.add_argument("path_or_alias", help="Repository path or alias to remove")
+    remove_cmd = sub.add_parser("remove", help="将仓库从守护进程配置中移除")
+    remove_cmd.add_argument("path_or_alias", help="要移除的仓库路径或别名")
 
     args = ap.parse_args()
 
